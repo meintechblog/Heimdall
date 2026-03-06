@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -63,5 +64,31 @@ class ItemCreateTest extends TestCase
 
         $response->assertStatus(302);
         $response->assertSee('Redirecting to http://localhost');
+    }
+
+    public function test_displays_home_dashboard_items_when_categories_mode_is_enabled(): void
+    {
+        $this->seed();
+
+        Setting::where('key', 'treat_tags_as')->update([
+            'value' => 'categories',
+        ]);
+
+        $item = [
+            'pinned' => 1,
+            'appid' => 'null',
+            'website' => null,
+            'title' => 'Item A',
+            'colour' => '#00f',
+            'url' => 'http://10.0.1.1',
+            'tags' => [0],
+        ];
+
+        $this->post('/items', $item);
+
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSee('Item A');
     }
 }

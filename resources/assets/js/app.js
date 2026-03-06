@@ -102,217 +102,15 @@ $.when($.ready).then(() => {
       $(".tooltip", this).removeClass("active");
     });
 
-  const TAG_USAGE_STORAGE_KEY = "heimdall.tagUsageHistory";
-  const TAG_USAGE_WINDOW = 100;
-  const ALL_TAG = "all";
-
-  function getTagUsageHistory() {
-    try {
-      const raw = JSON.parse(localStorage.getItem(TAG_USAGE_STORAGE_KEY) || "[]");
-      if (Array.isArray(raw)) {
-        return raw.filter((entry) => typeof entry === "string");
-      }
-
-      // Legacy fallback: old object-based counters.
-      if (raw && typeof raw === "object") {
-        const expanded = [];
-        Object.keys(raw).forEach((tag) => {
-          const count = Number(raw[tag] || 0);
-          for (let i = 0; i < count; i += 1) {
-            expanded.push(tag);
-          }
-        });
-        return expanded.slice(-TAG_USAGE_WINDOW);
-      }
-    } catch (_error) {
-      return [];
-    }
-
-    return [];
-  }
-
-  function saveTagUsageHistory(history) {
-    try {
-      localStorage.setItem(
-        TAG_USAGE_STORAGE_KEY,
-        JSON.stringify(history.slice(-TAG_USAGE_WINDOW))
-      );
-    } catch (_error) {
-      // Ignore localStorage failures and continue with default ordering.
-    }
-  }
-
-  function getTagUsageCounts() {
-    const history = getTagUsageHistory();
-    const counts = {};
-
-    history.forEach((tag) => {
-      counts[tag] = (counts[tag] || 0) + 1;
-    });
-
-    return counts;
-  }
-
-  function updateTagButtonCounts() {
-    const items = $("#sortable").find(".item-container");
-    const provider = $("#search-container select[name=provider]").val();
-    const search = (
-      $("#search-container input[name=q]").val() || ""
-    ).toLowerCase();
-
-    const datasetItems =
-      provider === "tiles"
-        ? items.filter(function () {
-            const name = String($(this).data("name") || "").toLowerCase();
-            return name.includes(search);
-          })
-        : items;
-
-    $("#taglist .tag").each(function () {
-      const button = $(this);
-      const tag = button.data("tag");
-
-      if (button.data("base-text") === undefined) {
-        const baseText = button
-          .text()
-          .replace(/\s*\(\d+\)\s*$/, "")
-          .trim();
-        button.data("base-text", baseText);
-      }
-
-      const baseText = button.data("base-text");
-      const count =
-        tag === ALL_TAG
-          ? datasetItems.length
-          : datasetItems.filter(function () {
-              const item = $(this);
-              if (String(tag).startsWith("cat-")) {
-                return item.closest(".category").hasClass(tag);
-              }
-              return item.hasClass(tag);
-            }).length;
-
-      button.text(`${baseText} (${count})`);
+  let dashboardFilters;
+  if (typeof window.initHeimdallDashboardFilters === "function") {
+    dashboardFilters = window.initHeimdallDashboardFilters({
+      $,
+      window,
+      document,
+      storage: window.localStorage,
     });
   }
-
-  function reorderTagButtonsByUsage() {
-    const taglist = $("#taglist");
-    if (taglist.length === 0) {
-      return;
-    }
-
-    const usage = getTagUsageCounts();
-    const buttons = taglist.find(".tag").get();
-
-    buttons.sort((firstButton, secondButton) => {
-      const first = $(firstButton);
-      const second = $(secondButton);
-      const firstTag = String(first.data("tag") || "");
-      const secondTag = String(second.data("tag") || "");
-
-      if (firstTag === ALL_TAG) return -1;
-      if (secondTag === ALL_TAG) return 1;
-
-      const usageDelta = (usage[secondTag] || 0) - (usage[firstTag] || 0);
-      if (usageDelta !== 0) {
-        return usageDelta;
-      }
-
-      return (first.data("order-index") || 0) - (second.data("order-index") || 0);
-    });
-
-    buttons.forEach((button) => {
-      taglist.append(button);
-    });
-  }
-
-  function applyTileFilters() {
-    const sortable = $("#sortable");
-    const items = sortable.find(".item-container");
-    const categoryWrappers = sortable.find(".category");
-    const categoryTitles = sortable.find(".category > .title");
-    const provider = $("#search-container select[name=provider]").val();
-    const search = (
-      $("#search-container input[name=q]").val() || ""
-    ).toLowerCase();
-    const selectedTag =
-      String($("#taglist .tag.current").first().data("tag") || ALL_TAG) || ALL_TAG;
-
-    if (provider !== "tiles") {
-      items.show();
-      categoryWrappers.show();
-      categoryTitles.show();
-      updateTagButtonCounts();
-      return;
-    }
-
-    items.hide();
-    items
-      .filter(function () {
-        const item = $(this);
-        const name = String(item.data("name") || "").toLowerCase();
-        const matchesSearch = search.length === 0 || name.includes(search);
-        const matchesTag =
-          selectedTag === ALL_TAG ||
-          (String(selectedTag).startsWith("cat-")
-            ? item.closest(".category").hasClass(selectedTag)
-            : item.hasClass(selectedTag));
-        return matchesSearch && matchesTag;
-      })
-      .show();
-
-    if (categoryWrappers.length > 0) {
-      // Reset wrapper visibility first so cross-category switching works reliably.
-      categoryWrappers.show();
-
-      categoryWrappers.each(function () {
-        const wrapper = $(this);
-        const matchingChildren = wrapper
-          .find(".item-container")
-          .filter(function () {
-            return $(this).css("display") !== "none";
-          }).length;
-        wrapper.toggle(matchingChildren > 0);
-      });
-
-      const isFiltered = selectedTag !== ALL_TAG || search.length > 0;
-      if (isFiltered) {
-        categoryTitles.hide();
-      } else {
-        categoryTitles.show();
-      }
-    }
-
-    updateTagButtonCounts();
-  }
-
-  $("#taglist .tag").each(function (index) {
-    $(this).data("order-index", index);
-  });
-
-  reorderTagButtonsByUsage();
-
-  $(".searchform > form").on("submit", (event) => {
-    if ($("#search-container select[name=provider]").val() === "tiles") {
-      event.preventDefault();
-    }
-  });
-
-  $("#search-container")
-    .on("input", "input[name=q]", () => {
-      applyTileFilters();
-    })
-    .on("change", "select[name=provider]", function () {
-      if ($(this).val() === "tiles") {
-        $("#search-container button").hide();
-      } else {
-        $("#search-container button").show();
-      }
-      applyTileFilters();
-    });
-
-  $("#search-container select[name=provider]").trigger("change");
 
   $("#app")
     .on("click", "#config-button", (e) => {
@@ -334,22 +132,6 @@ $.when($.ready).then(() => {
           $(".item-edit").fadeIn();
         }, 350);
       }
-    })
-    .on("click", ".tag", (e) => {
-      e.preventDefault();
-      const tagButton = $(e.currentTarget);
-      const tag = String(tagButton.data("tag") || ALL_TAG);
-      $("#taglist .tag").removeClass("current");
-      tagButton.addClass("current");
-
-      if (tag !== ALL_TAG) {
-        const usageHistory = getTagUsageHistory();
-        usageHistory.push(tag);
-        saveTagUsageHistory(usageHistory);
-      }
-
-      reorderTagButtonsByUsage();
-      applyTileFilters();
     })
     .on("click", "#add-item, #pin-item", (e) => {
       e.preventDefault();
@@ -411,7 +193,9 @@ $.when($.ready).then(() => {
       const inner = $(data).filter("#sortable").html();
       $("#sortable").html(inner);
       current.toggleClass("active");
-      applyTileFilters();
+      if (dashboardFilters) {
+        dashboardFilters.applyTileFilters();
+      }
     });
   });
   $("#itemform").on("submit", () => {

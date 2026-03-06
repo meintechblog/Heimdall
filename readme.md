@@ -64,6 +64,16 @@ Consider contributing to https://github.com/linuxserver/Heimdall/discussions/cat
 
 The item at the top of the list `Tiles` allows you to search for apps on your dashboard by name, this can be helpful when you have lots of icons.
 
+### Dashboard tile filtering
+The dashboard tile filter UI lives in `/resources/assets/js/dashboardFilters.js`.
+
+Typing into the homepage search box filters dashboard tiles live, and the tag/category buttons apply the same filter state. External search providers still control what happens on form submit, but the dashboard filter itself remains active so tile filtering does not break when the selected provider changes or a restored instance falls back to another provider.
+
+The current regression coverage for this behavior is:
+
+- `npm run test:js`
+- `php artisan test tests/Feature/ItemCreateTest.php tests/Feature/DashTest.php`
+
 ## New background image not being set
 If you are using the docker image or a default php install you may find images over 2MB won't get set as the background image, you just need to change the `upload_max_filesize` in the php.ini.
 

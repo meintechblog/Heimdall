@@ -288,7 +288,7 @@ body {
 .create .textarea label:not(.switch) {
   width: 100%;
   font-size: 13px;
-  color: #9094a5;
+  color: rgb(143.9714285714, 147.8, 165.0285714286);
   margin-bottom: 15px;
   display: block;
   font-weight: 300;
@@ -846,7 +846,7 @@ body {
 }
 .module-actions .button {
   font-size: 18px;
-  color: #515564;
+  color: rgb(81.2428571429, 84.7, 100.2571428571);
   padding: 0 10px;
   border: none;
   border-left: 1px solid #cdced8;
@@ -904,7 +904,7 @@ div.create .input {
 div.create .input label:not(.switch) {
   width: 100%;
   font-size: 13px;
-  color: #9094a5;
+  color: rgb(143.9714285714, 147.8, 165.0285714286);
   margin-bottom: 15px;
   display: block;
   font-weight: 300;
@@ -1495,7 +1495,7 @@ http://huebee.buzz
   padding: 10px;
   background: #EEE;
   border-radius: 5px;
-  box-shadow: 0 5px 10px hsla(0deg, 0%, 0%, 0.3);
+  box-shadow: 0 5px 10px hsla(0, 0%, 0%, 0.3);
 }
 
 .huebee.is-static-open .huebee__container {
@@ -1712,7 +1712,6 @@ http://huebee.buzz
 .select2-hidden-accessible {
   border: 0 !important;
   clip: rect(0 0 0 0) !important;
-  -webkit-clip-path: inset(50%) !important;
   clip-path: inset(50%) !important;
   height: 1px !important;
   overflow: hidden !important;

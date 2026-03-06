@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Item;
 use App\ItemTag;
+use App\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -79,5 +80,22 @@ class DashTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Tag 1');
         $response->assertSee('Tag 2');
+    }
+
+    public function test_uses_tiles_as_the_selected_dashboard_search_provider_when_configured(): void
+    {
+        $this->seed();
+
+        Setting::where('key', 'homepage_search')->update([
+            'value' => 1,
+        ]);
+        Setting::where('key', 'search_provider')->update([
+            'value' => 'tiles',
+        ]);
+
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSee('<option value="tiles" selected="selected">Tiles</option>', false);
     }
 }

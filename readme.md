@@ -17,7 +17,7 @@ As the name suggests Heimdall Application Dashboard is a dashboard for all your 
 
 Heimdall is an elegant solution to organise all your web applications. It’s dedicated to this purpose so you won’t lose your links in a sea of bookmarks.
 
-Why not use it as your browser start page? It even has the ability to include a search bar using either Google, Bing or DuckDuckGo.
+Why not use it as your browser start page? It includes a search bar that filters Heimdall tiles live while you type and opens a Google search in a new tab when you press `Enter`.
 
 ![Heimdall demo animation](https://i.imgur.com/MrC4QpN.gif)
 
@@ -55,21 +55,18 @@ There is also a multi-arch Docker which supports x86-64, armhf and arm64, instru
 ## Updating
 To update your instance, simply clone this repository or download the zip/tar file with the new version and copy it over the old installation.
 
-## Search Providers
-v2.3.0 added the ability for users to customise the search options.
+### Hulki fork workflow
+For the Hulki custom fork, use the repo-managed replay workflow in `docs/UPDATING_HULKI_FORK.md`. It covers rebasing the customization branch onto `2.x`, rebuilding assets, exporting the live overlay from the repo, syncing the host copy on `proxi1`, and redeploying into CT `100`.
 
-Options are stored in `/storage/app/searchproviders.yaml` (`/config/www/searchproviders.yaml` on docker installs), feel free to rearrange the options, add new ones, delete ones you don't use, etc.
+## Homepage Search
+The homepage search field has two behaviors:
 
-Consider contributing to https://github.com/linuxserver/Heimdall/discussions/categories/search-providers to help others add new ones.
+- typing filters Heimdall tiles on the dashboard live
+- pressing `Enter` with a non-empty query opens a Google search in a new tab
 
-The item at the top of the list `Tiles` allows you to search for apps on your dashboard by name, this can be helpful when you have lots of icons.
-
-### Dashboard tile filtering
 The dashboard tile filter UI lives in `/resources/assets/js/dashboardFilters.js`.
 
-Typing into the homepage search box filters dashboard tiles live, and the tag/category buttons apply the same filter state. External search providers still control what happens on form submit, but the dashboard filter itself remains active so tile filtering does not break when the selected provider changes or a restored instance falls back to another provider.
-
-The current regression coverage for this behavior is:
+Regression coverage for this behavior:
 
 - `npm run test:js`
 - `php artisan test tests/Feature/ItemCreateTest.php tests/Feature/DashTest.php`

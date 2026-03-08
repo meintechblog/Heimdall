@@ -82,7 +82,7 @@ class DashTest extends TestCase
         $response->assertSee('Tag 2');
     }
 
-    public function test_uses_tiles_as_the_selected_dashboard_search_provider_when_configured(): void
+    public function test_does_not_render_search_provider_dropdown_on_the_dash(): void
     {
         $this->seed();
 
@@ -96,6 +96,7 @@ class DashTest extends TestCase
         $response = $this->get('/');
 
         $response->assertOk();
-        $response->assertSee('<option value="tiles" selected="selected">Tiles</option>', false);
+        $response->assertDontSee('<select name="provider">', false);
+        $response->assertSee('input type="text" name="q"', false);
     }
 }

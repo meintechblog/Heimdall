@@ -44,6 +44,11 @@ done
   exit 2
 }
 
+[[ -f "$OVERLAY_DIR/EXPORT_METADATA" ]] || {
+  echo "Overlay metadata missing: $OVERLAY_DIR/EXPORT_METADATA" >&2
+  exit 2
+}
+
 mapfile -t FILES < <(cd "$OVERLAY_DIR" && find . -type f ! -name 'EXPORT_METADATA' | sort)
 
 [[ ${#FILES[@]} -gt 0 ]] || {
@@ -71,19 +76,10 @@ for rel in "${FILES[@]}"; do
   pct push "$CTID" "$OVERLAY_DIR/$rel" "$TARGET_ROOT/$rel"
 done
 
-echo "[4/4] fix ownership + clear laravel caches"
-CHOWN_ARGS=()
-for rel in "${FILES[@]}"; do
-  rel="${rel#./}"
-  CHOWN_ARGS+=("'$TARGET_ROOT/$rel'")
-done
-
-pct exec "$CTID" -- sh -lc "\
-  chown www-data:www-data ${CHOWN_ARGS[*]} && \
-  cd '$TARGET_ROOT' && \
-  php artisan view:clear >/dev/null 2>&1 || true && \
-  php artisan cache:clear >/dev/null 2>&1 || true && \
-  php artisan config:clear >/dev/null 2>&1 || true && \
-  php artisan route:clear >/dev/null 2>&1 || true"
+echo "[4/4] clear laravel caches"
+pct exec "$CTID" -- sh -lc "cd '$TARGET_ROOT' && php artisan view:clear >/dev/null 2>&1"
+pct exec "$CTID" -- sh -lc "cd '$TARGET_ROOT' && php artisan cache:clear >/dev/null 2>&1"
+pct exec "$CTID" -- sh -lc "cd '$TARGET_ROOT' && php artisan config:clear >/dev/null 2>&1"
+pct exec "$CTID" -- sh -lc "cd '$TARGET_ROOT' && php artisan route:clear >/dev/null 2>&1"
 
 echo "backup_dir=$BACKUP_DIR"

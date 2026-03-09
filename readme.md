@@ -56,13 +56,15 @@ There is also a multi-arch Docker which supports x86-64, armhf and arm64, instru
 To update your instance, simply clone this repository or download the zip/tar file with the new version and copy it over the old installation.
 
 ### Hulki fork workflow
-For the Hulki custom fork, use the repo-managed replay workflow in `docs/UPDATING_HULKI_FORK.md`. It covers rebasing the customization branch onto `2.x`, rebuilding assets, exporting the live overlay from the repo, syncing the host copy on `proxi1`, and redeploying into CT `100`.
+For the Hulki custom fork, use the repo-managed replay workflow in `docs/UPDATING_HULKI_FORK.md`. It covers rebasing the customization branch onto `2.x`, rebuilding assets, exporting the live overlay from the repo with stale-asset protection, syncing the host copy on `proxi1`, and redeploying into CT `100`.
 
 ## Homepage Search
 The homepage search field has two behaviors:
 
 - typing filters Heimdall tiles on the dashboard live
 - pressing `Enter` with a non-empty query opens a Google search in a new tab
+
+In `categories` mode, filtered/search results reuse the original tile nodes instead of cloned duplicates, so duplicate category membership does not render duplicate tiles and live stats keep updating.
 
 The dashboard tile filter UI lives in `/resources/assets/js/dashboardFilters.js`.
 

@@ -3909,6 +3909,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
   var TAG_USAGE_STORAGE_KEY = "heimdall.tagUsageHistory";
   var TAG_USAGE_WINDOW = 100;
   var ALL_TAG = "all";
+  var allItems;
   function getItemTagForFilter(tag) {
     var normalizedTag = String(tag || "");
     if (normalizedTag.startsWith("cat-")) {
@@ -3968,11 +3969,6 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
   function getSelectedTag() {
     return String($("#taglist .tag.current").first().data("tag") || ALL_TAG) || ALL_TAG;
   }
-  function getVisibleItems() {
-    return $("#sortable .item-container").filter(function filterVisible() {
-      return $(this).css("display") !== "none";
-    });
-  }
   function ensureFilteredResultsContainer(sortable) {
     var results = $("#dashboard-filter-results");
     if (results.length === 0) {
@@ -3980,6 +3976,37 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       sortable.after(results);
     }
     return results;
+  }
+  function hasHiddenAncestor(item) {
+    return item.parents().toArray().some(function (element) {
+      return $(element).css("display") === "none";
+    });
+  }
+  function getVisibleItems(items) {
+    return items.filter(function filterVisible() {
+      var item = $(this);
+      return item.css("display") !== "none" && hasHiddenAncestor(item) === false;
+    });
+  }
+  function ensureOriginalPositionAnchors(items) {
+    items.each(function storeOriginalPosition() {
+      var item = $(this);
+      if (item.data("filter-anchor")) {
+        return;
+      }
+      var anchor = $('<span class="dashboard-filter-anchor" aria-hidden="true"></span>').css("display", "none");
+      item.after(anchor);
+      item.data("filter-anchor", anchor);
+    });
+  }
+  function restoreOriginalItems(items) {
+    items.each(function restoreOriginalPosition() {
+      var item = $(this);
+      var anchor = item.data("filter-anchor");
+      if (anchor && anchor.length > 0) {
+        anchor.before(item);
+      }
+    });
   }
   function uniqueElementsByItemId(elements) {
     var seen = new Set();
@@ -4003,7 +4030,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     return matchesSearch && matchesTag;
   }
   function updateTagButtonCounts() {
-    var items = $("#sortable").find(".item-container");
+    var items = allItems;
     var canonicalItems = uniqueElementsByItemId(items);
     var search = getSearchValue();
     var datasetItems = canonicalItems.filter(function filterBySearch() {
@@ -4050,32 +4077,33 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
   function applyTileFilters() {
     var sortable = $("#sortable");
     var filteredResults = ensureFilteredResultsContainer(sortable);
-    var items = sortable.find(".item-container");
+    var items = allItems;
     var categoryWrappers = sortable.find(".category");
     var categoryTitles = sortable.find(".category > .title");
     var search = getSearchValue();
     var selectedTag = getSelectedTag();
     var filterActive = search.length > 0 || selectedTag !== ALL_TAG;
+    restoreOriginalItems(items);
+    filteredResults.hide().empty();
     if (filterActive) {
+      items.hide();
       var filteredItems = uniqueElementsByItemId(items.filter(function filterItems() {
         return itemMatchesFilters($(this), search, selectedTag);
       }));
-      filteredResults.empty();
       filteredItems.each(function appendFilteredItem() {
-        filteredResults.append($(this).clone(true, true).show());
+        filteredResults.append($(this).show());
       });
       sortable.hide();
       filteredResults.css("display", "flex");
       updateTagButtonCounts();
       return;
     }
-    filteredResults.empty().hide();
     sortable.css("display", "flex");
     items.hide();
     items.filter(function filterItems() {
       return itemMatchesFilters($(this), search, selectedTag);
     }).show();
-    var visibleItems = getVisibleItems();
+    var visibleItems = getVisibleItems(items);
     var uniqueVisibleItems = uniqueElementsByItemId(visibleItems);
     visibleItems.not(uniqueVisibleItems).hide();
     if (categoryWrappers.length > 0) {
@@ -4095,6 +4123,8 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     }
     updateTagButtonCounts();
   }
+  allItems = $("#sortable .item-container");
+  ensureOriginalPositionAnchors(allItems);
   $("#taglist .tag").each(function storeOrderIndex(index) {
     $(this).data("order-index", index);
   });

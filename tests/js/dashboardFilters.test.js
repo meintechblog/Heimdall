@@ -151,7 +151,7 @@ test("category button counts use unique visible matches per category", () => {
   assert.equal(mediaLabel, "Media (2)");
 });
 
-test("searching live-like duplicate categories shows one flat unique result set", () => {
+test("searching live-like duplicate categories reuses original tiles instead of cloning them", () => {
   const dom = new JSDOM(
     `<!doctype html>
     <html>
@@ -218,6 +218,10 @@ test("searching live-like duplicate categories shows one flat unique result set"
     document: window.document,
   });
 
+  const originalProxi1Tile = $(
+    "#sortable .category.cat-main-services .item-container[data-id='14']"
+  ).get(0);
+
   $("#search-container input[name=q]").val("proxi").trigger("input");
 
   const visibleResults = $("#dashboard-filter-results .item-container")
@@ -236,4 +240,8 @@ test("searching live-like duplicate categories shows one flat unique result set"
   ]);
   assert.notEqual($("#dashboard-filter-results").css("display"), "none");
   assert.equal($("#sortable").css("display"), "none");
+  assert.ok(
+    $("#dashboard-filter-results .item-container[data-id='14']").get(0) ===
+      originalProxi1Tile
+  );
 });

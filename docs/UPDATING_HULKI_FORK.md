@@ -72,6 +72,12 @@ This writes the mirrored deployment payload to:
 ops/heimdall-ui-overlay/
 ```
 
+If the built assets are stale, the export script stops with an error. To rebuild as part of the export step, use:
+
+```bash
+./scripts/hulki/export-heimdall-ui-overlay.sh --build-assets
+```
+
 ## Sync the host copy on `proxi1`
 
 ```bash
@@ -82,6 +88,8 @@ This refreshes:
 
 - `/root/hulki-maint/heimdall-ui-overlay`
 - `/root/hulki-maint/deploy-heimdall-ui-overlay.sh`
+
+The fixed host overlay path is updated via a versioned release directory and a symlink swap, so failed uploads do not first wipe the current host copy.
 
 ## Deploy from `proxi1`
 

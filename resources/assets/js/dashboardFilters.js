@@ -13,6 +13,7 @@
   const TAG_USAGE_STORAGE_KEY = "heimdall.tagUsageHistory";
   const TAG_USAGE_WINDOW = 100;
   const ALL_TAG = "all";
+  let allItems;
 
   function getItemTagForFilter(tag) {
     const normalizedTag = String(tag || "");
@@ -94,12 +95,6 @@
     );
   }
 
-  function getVisibleItems() {
-    return $("#sortable .item-container").filter(function filterVisible() {
-      return $(this).css("display") !== "none";
-    });
-  }
-
   function ensureFilteredResultsContainer(sortable) {
     let results = $("#dashboard-filter-results");
 
@@ -111,6 +106,49 @@
     }
 
     return results;
+  }
+
+  function hasHiddenAncestor(item) {
+    return item
+      .parents()
+      .toArray()
+      .some((element) => $(element).css("display") === "none");
+  }
+
+  function getVisibleItems(items) {
+    return items.filter(function filterVisible() {
+      const item = $(this);
+      return (
+        item.css("display") !== "none" && hasHiddenAncestor(item) === false
+      );
+    });
+  }
+
+  function ensureOriginalPositionAnchors(items) {
+    items.each(function storeOriginalPosition() {
+      const item = $(this);
+
+      if (item.data("filter-anchor")) {
+        return;
+      }
+
+      const anchor = $(
+        '<span class="dashboard-filter-anchor" aria-hidden="true"></span>'
+      ).css("display", "none");
+      item.after(anchor);
+      item.data("filter-anchor", anchor);
+    });
+  }
+
+  function restoreOriginalItems(items) {
+    items.each(function restoreOriginalPosition() {
+      const item = $(this);
+      const anchor = item.data("filter-anchor");
+
+      if (anchor && anchor.length > 0) {
+        anchor.before(item);
+      }
+    });
   }
 
   function uniqueElementsByItemId(elements) {
@@ -143,7 +181,7 @@
   }
 
   function updateTagButtonCounts() {
-    const items = $("#sortable").find(".item-container");
+    const items = allItems;
     const canonicalItems = uniqueElementsByItemId(items);
     const search = getSearchValue();
     const datasetItems = canonicalItems.filter(function filterBySearch() {
@@ -210,23 +248,27 @@
   function applyTileFilters() {
     const sortable = $("#sortable");
     const filteredResults = ensureFilteredResultsContainer(sortable);
-    const items = sortable.find(".item-container");
+    const items = allItems;
     const categoryWrappers = sortable.find(".category");
     const categoryTitles = sortable.find(".category > .title");
     const search = getSearchValue();
     const selectedTag = getSelectedTag();
     const filterActive = search.length > 0 || selectedTag !== ALL_TAG;
 
+    restoreOriginalItems(items);
+    filteredResults.hide().empty();
+
     if (filterActive) {
+      items.hide();
+
       const filteredItems = uniqueElementsByItemId(
         items.filter(function filterItems() {
           return itemMatchesFilters($(this), search, selectedTag);
         })
       );
 
-      filteredResults.empty();
       filteredItems.each(function appendFilteredItem() {
-        filteredResults.append($(this).clone(true, true).show());
+        filteredResults.append($(this).show());
       });
 
       sortable.hide();
@@ -235,7 +277,6 @@
       return;
     }
 
-    filteredResults.empty().hide();
     sortable.css("display", "flex");
 
     items.hide();
@@ -245,7 +286,7 @@
       })
       .show();
 
-    const visibleItems = getVisibleItems();
+    const visibleItems = getVisibleItems(items);
     const uniqueVisibleItems = uniqueElementsByItemId(visibleItems);
     visibleItems.not(uniqueVisibleItems).hide();
 
@@ -271,6 +312,9 @@
 
     updateTagButtonCounts();
   }
+
+  allItems = $("#sortable .item-container");
+  ensureOriginalPositionAnchors(allItems);
 
   $("#taglist .tag").each(function storeOrderIndex(index) {
     $(this).data("order-index", index);

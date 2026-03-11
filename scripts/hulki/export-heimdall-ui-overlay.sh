@@ -9,6 +9,7 @@ BUILD_ASSETS=0
 FILES=(
   "app/Search.php"
   "app/Http/Controllers/ItemController.php"
+  "config/app.php"
   "resources/assets/js/app.js"
   "resources/assets/js/dashboardFilters.js"
   "resources/assets/sass/_app.scss"

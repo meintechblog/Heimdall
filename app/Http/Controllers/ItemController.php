@@ -270,20 +270,6 @@ class ItemController extends Controller
                 'icon' => $path,
             ]);
         } elseif (strpos($request->input('icon'), 'http') === 0) {
-            $options = [
-                "ssl" => [
-                    "verify_peer" => false,
-                    "verify_peer_name" => false,
-                ],
-            ];
-
-            // Proxy management
-            $httpsProxy = getenv('HTTPS_PROXY');
-            $httpsProxyLower = getenv('https_proxy');
-            if ($httpsProxy !== false || $httpsProxyLower !== false) {
-                $options['proxy']['http'] = $httpsProxy ?: $httpsProxyLower;
-            }
-
             $file = $request->input('icon');
             $path_parts = pathinfo($file);
             if (!array_key_exists('extension', $path_parts)) {
@@ -291,7 +277,11 @@ class ItemController extends Controller
             }
             $extension = $path_parts['extension'];
 
-            $contents = file_get_contents($request->input('icon'), false, stream_context_create($options));
+            $contents = file_get_contents(
+                $request->input('icon'),
+                false,
+                stream_context_create(self::remoteIconStreamContextOptions())
+            );
 
             if ($extension === 'svg') {
                 $sanitizer = new Sanitizer();
@@ -610,6 +600,28 @@ class ItemController extends Controller
             $application->config = $config;
             echo $application->livestats();
         }
+    }
+
+    protected static function remoteIconStreamContextOptions(): array
+    {
+        $options = [];
+
+        if (config('app.allow_insecure_remote_icon_tls')) {
+            $options['ssl'] = [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ];
+        }
+
+        $httpsProxy = getenv('HTTPS_PROXY');
+        $httpsProxyLower = getenv('https_proxy');
+        $proxy = $httpsProxy ?: $httpsProxyLower;
+
+        if ($proxy !== false && $proxy !== '') {
+            $options['proxy']['http'] = $proxy;
+        }
+
+        return $options;
     }
 
     /**

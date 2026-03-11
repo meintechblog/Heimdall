@@ -192,6 +192,14 @@ openssl.cafile = /config/heimdall.pem
 
 Restart the container and the Enhanced apps should now be able to access your local HTTP websites. This configuration will survive updating or recreating the Heimdall container.
 
+For remote icon downloads, Heimdall also verifies HTTPS certificates by default. If you cannot provide a proper CA bundle and need compatibility with an invalid/self-signed certificate, you can set:
+
+```env
+ALLOW_INSECURE_REMOTE_ICON_TLS=true
+```
+
+Use that only as a last resort. It disables certificate verification for remote icon downloads and reduces transport security.
+
 ## Allow Internal IP Requests
 
 By default, Heimdall blocks requests to private or reserved IP addresses to mitigate potential security risks such as Server-Side Request Forgery (SSRF). However, you can enable access to internal IPs by setting the `ALLOW_INTERNAL_REQUESTS` environment variable in your `.env` file.

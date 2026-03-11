@@ -22,6 +22,7 @@ The overlay export currently includes:
 
 - `app/Search.php`
 - `app/Http/Controllers/ItemController.php`
+- `config/app.php`
 - `resources/assets/js/app.js`
 - `resources/assets/js/dashboardFilters.js`
 - `resources/assets/sass/_app.scss`
@@ -118,6 +119,8 @@ For the dashboard search behavior, confirm:
 - typing filters tiles live
 - `Enter` opens Google in a new tab
 - duplicate apps that belong to multiple categories appear only once while filtered
+
+For remote icon downloads, the secure default is now TLS verification ON. If a live Heimdall instance still needs compatibility with invalid/self-signed remote icon certificates, set `ALLOW_INSECURE_REMOTE_ICON_TLS=true` in the live `.env`, clear config cache, and treat it as a temporary exception rather than the normal setup.
 
 ## Notes
 

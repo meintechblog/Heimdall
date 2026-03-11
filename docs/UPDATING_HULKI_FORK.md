@@ -21,6 +21,7 @@ Keep `2.x` close to upstream Heimdall. Keep all Hulki-specific behavior on the c
 The overlay export currently includes:
 
 - `app/Search.php`
+- `app/Providers/AppServiceProvider.php`
 - `app/Http/Controllers/ItemController.php`
 - `config/app.php`
 - `resources/assets/js/app.js`

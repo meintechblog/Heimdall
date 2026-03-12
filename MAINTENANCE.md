@@ -41,6 +41,8 @@ Das macht:
 - Nicht wieder `ui-settings` für `PausedUntil` missbrauchen, das hat auf der MacMini-Instanz `/initial-config` ausgelöst.
 - Wenn eine FileFlows-Instanz nicht erreichbar ist, soll die Kachel nach wenigen Sekunden auf `Unavailable` fallen statt mit langem Timeout/`500` das Dashboard auszubremsen.
 - Proxmox-Kacheln zeigen bewusst `Guests`, `CPU` und `RAM`, wobei `Guests` aus `VM + LXC` zusammengezählt wird.
+- VenusOS-Kacheln lesen lokal per `MQTT on LAN (Plaintext)` auf Port `1883`; für `VenusOS Hallbude 3.11` ist die Portal-ID aktuell `dca6327406c5`.
+- Der Live-Deploy registriert den privaten Anwendungstyp `VenusOS` automatisch erneut, falls Heimdall-Updates ihn aus der Datenbank werfen.
 
 ## Schnelle Live-Checks
 

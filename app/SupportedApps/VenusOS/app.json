@@ -1,0 +1,10 @@
+{
+  "appid": "191c67b4933ec1ca9dda6ccb69a4a7e0d40d42e9",
+  "name": "VenusOS",
+  "website": "https://www.victronenergy.com/live/venus-os:start",
+  "license": "Victron Energy documentation and software ecosystem",
+  "description": "Venus OS is Victron Energy's operating system for GX devices and local energy monitoring.",
+  "enhanced": true,
+  "tile_background": "dark",
+  "icon": "venusos.png"
+}

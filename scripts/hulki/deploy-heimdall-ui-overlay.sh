@@ -59,10 +59,10 @@ mapfile -t FILES < <(cd "$OVERLAY_DIR" && find . -type f ! -name 'EXPORT_METADAT
 TS=$(date +%Y%m%d-%H%M%S)
 BACKUP_DIR="$TARGET_ROOT/.hulki-backups/$TS"
 
-echo "[1/4] prepare backup dir"
+echo "[1/5] prepare backup dir"
 pct exec "$CTID" -- sh -lc "mkdir -p '$BACKUP_DIR'"
 
-echo "[2/4] back up current files"
+echo "[2/5] back up current files"
 for rel in "${FILES[@]}"; do
   rel="${rel#./}"
   pct exec "$CTID" -- sh -lc "\
@@ -70,13 +70,44 @@ for rel in "${FILES[@]}"; do
     if [ -e '$TARGET_ROOT/$rel' ]; then cp -a '$TARGET_ROOT/$rel' '$BACKUP_DIR/$rel.bak'; fi"
 done
 
-echo "[3/4] push overlay files"
+echo "[3/5] push overlay files"
 for rel in "${FILES[@]}"; do
   rel="${rel#./}"
   pct push "$CTID" "$OVERLAY_DIR/$rel" "$TARGET_ROOT/$rel"
 done
 
-echo "[4/4] clear laravel caches"
+PRIVATE_APPS_TINKER='$apps = [[
+    "appid" => "191c67b4933ec1ca9dda6ccb69a4a7e0d40d42e9",
+    "name" => "VenusOS",
+    "class" => "App\\SupportedApps\\VenusOS\\VenusOS",
+    "enhanced" => 1,
+    "icon" => "icons/venusos.png",
+    "website" => "https://www.victronenergy.com/live/venus-os:start",
+    "license" => "Victron Energy documentation and software ecosystem",
+    "description" => "Venus OS local Victron metrics.",
+    "tile_background" => "dark",
+]];
+
+foreach ($apps as $app) {
+    $model = \App\Application::query()->where("appid", $app["appid"])->first();
+    if (! $model) {
+        $model = new \App\Application();
+    }
+
+    foreach ($app as $key => $value) {
+        $model->{$key} = $value;
+    }
+
+    $model->save();
+}'
+
+echo "[4/5] register private app types"
+pct exec "$CTID" -- bash -lc "cd '$TARGET_ROOT' && php artisan tinker --execute=$(printf '%q' "$PRIVATE_APPS_TINKER") >/dev/null 2>&1"
+pct exec "$CTID" -- sh -lc "\
+  mkdir -p '$TARGET_ROOT/storage/app/public/icons' && \
+  cp -f '$TARGET_ROOT/app/SupportedApps/VenusOS/venusos.png' '$TARGET_ROOT/storage/app/public/icons/venusos.png'"
+
+echo "[5/5] clear laravel caches"
 pct exec "$CTID" -- sh -lc "cd '$TARGET_ROOT' && php artisan view:clear >/dev/null 2>&1"
 pct exec "$CTID" -- sh -lc "cd '$TARGET_ROOT' && php artisan cache:clear >/dev/null 2>&1"
 pct exec "$CTID" -- sh -lc "cd '$TARGET_ROOT' && php artisan config:clear >/dev/null 2>&1"

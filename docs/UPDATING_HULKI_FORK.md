@@ -26,6 +26,11 @@ The overlay export currently includes:
 - `app/SupportedApps/Proxmox/app.json`
 - `app/SupportedApps/Proxmox/config.blade.php`
 - `app/SupportedApps/Proxmox/livestats.blade.php`
+- `app/SupportedApps/VenusOS/VenusOS.php`
+- `app/SupportedApps/VenusOS/app.json`
+- `app/SupportedApps/VenusOS/config.blade.php`
+- `app/SupportedApps/VenusOS/livestats.blade.php`
+- `app/SupportedApps/VenusOS/venusos.png`
 - `app/Providers/AppServiceProvider.php`
 - `app/Http/Controllers/ItemController.php`
 - `bootstrap/app.php`
@@ -70,7 +75,7 @@ git rebase --continue
 npm run lint
 npm run test:js
 APP_ENV=testing DB_CONNECTION=sqlite DB_DATABASE=codex-fileflows-feature.sqlite php artisan test --filter=FileFlowsProcessingToggleTest
-APP_ENV=testing DB_CONNECTION=sqlite DB_DATABASE=codex-proxmox-suite.sqlite php artisan test --filter='(ItemCreateTest|ProxmoxLiveStatsTest)'
+APP_ENV=testing DB_CONNECTION=sqlite DB_DATABASE=codex-dashboard-suite.sqlite php artisan test --filter='(ItemCreateTest|ProxmoxLiveStatsTest|VenusOSLiveStatsTest)'
 npx mix
 ```
 
@@ -170,6 +175,14 @@ For the Proxmox tile customization, confirm:
 - token ID and token value can be saved
 - a configured tile shows `Guests`, `CPU`, and `RAM`
 - node filtering still works when multiple nodes are configured as a comma-separated list
+
+For the VenusOS tile customization, confirm:
+
+- the edit form shows `MQTT Port` and optional `Portal ID`
+- the Venus device has `MQTT on LAN (Plaintext)` enabled
+- a configured tile shows `PV`, `Battery`, and `Grid`
+- `Grid` uses a green up-arrow for export and a red down-arrow for import
+- the live deploy re-registers the private `VenusOS` app type automatically
 
 For live operations, keep CT100 on a normal web stack (`nginx` + `php-fpm`) instead of `php artisan serve`. The built-in Laravel dev server is acceptable for quick local testing, but it is too fragile for live dashboard traffic and multiple parallel live-stat requests.
 

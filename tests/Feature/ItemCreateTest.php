@@ -106,4 +106,42 @@ class ItemCreateTest extends TestCase
 
         $this->assertTrue($item->enhanced());
     }
+
+    public function test_treats_a_venusos_item_without_saved_config_as_an_enhanced_app(): void
+    {
+        $item = Item::factory()->make([
+            'title' => 'VenusOS Test',
+            'url' => 'http://192.168.3.11',
+            'user_id' => 0,
+            'class' => 'App\\SupportedApps\\VenusOS\\VenusOS',
+            'appid' => 'venusos-private-app',
+            'description' => null,
+        ]);
+
+        $this->assertTrue($item->enhanced());
+    }
+
+    public function test_displays_the_venusos_config_on_the_item_edit_page(): void
+    {
+        $this->seed();
+
+        $item = Item::factory()->create([
+            'title' => 'VenusOS Test',
+            'url' => 'http://192.168.3.11',
+            'user_id' => 0,
+            'class' => 'App\\SupportedApps\\VenusOS\\VenusOS',
+            'appid' => 'venusos-private-app',
+            'description' => json_encode([
+                'enabled' => true,
+                'mqtt_port' => 1883,
+                'portal_id' => 'dca6327406c5',
+            ]),
+        ]);
+
+        $response = $this->get('/items/'.$item->id.'/edit');
+
+        $response->assertOk();
+        $response->assertSee('MQTT Port');
+        $response->assertSee('Portal ID');
+    }
 }

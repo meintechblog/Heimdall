@@ -168,7 +168,7 @@ For the Proxmox tile customization, confirm:
 
 - the Proxmox edit form shows the optional config block
 - token ID and token value can be saved
-- a configured tile shows `LXC`, `CPU`, and `RAM`
+- a configured tile shows `Guests`, `CPU`, and `RAM`
 - node filtering still works when multiple nodes are configured as a comma-separated list
 
 For remote icon downloads, the secure default is now TLS verification ON. If a live Heimdall instance still needs compatibility with invalid/self-signed remote icon certificates, set `ALLOW_INSECURE_REMOTE_ICON_TLS=true` in the live `.env`, clear config cache, and treat it as a temporary exception rather than the normal setup.

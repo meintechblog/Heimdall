@@ -78,7 +78,7 @@ This fork also carries a repo-managed Proxmox enhanced-tile customization:
 
 - the Proxmox app config is available even before live API details have been saved
 - the tile can use token-based Proxmox API access with optional URL override, node filtering, and optional TLS-skip mode
-- the live tile stats focus on `LXC`, `CPU`, and `RAM`
+- the live tile stats focus on `Guests`, `CPU`, and `RAM`
 
 To replay the Hulki customizations quickly after a Heimdall update, use:
 

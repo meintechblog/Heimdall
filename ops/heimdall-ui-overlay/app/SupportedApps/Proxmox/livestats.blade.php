@@ -1,7 +1,7 @@
 <ul class="livestats">
     <li>
-        <span class="title">LXC</span>
-        <strong>{!! $container_running !!}/{!! $container_total !!}</strong>
+        <span class="title">Guests</span>
+        <strong>{!! $guest_running !!}/{!! $guest_total !!}</strong>
     </li>
     <li>
         <span class="title">CPU</span>

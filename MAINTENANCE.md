@@ -35,8 +35,10 @@ Das macht:
 
 - Nicht direkt im Live-Container herumeditieren.
 - Änderungen immer im Repo machen und dann per Overlay deployen.
+- Die Heimdall-LXC `CT100` sollte mindestens mit `2 Cores`, `1024 MB RAM` und `512 MB Swap` laufen.
 - Für FileFlows-Pause/Resume nur die nativen Endpunkte verwenden.
 - Nicht wieder `ui-settings` für `PausedUntil` missbrauchen, das hat auf der MacMini-Instanz `/initial-config` ausgelöst.
+- Proxmox-Kacheln zeigen bewusst `Guests`, `CPU` und `RAM`, wobei `Guests` aus `VM + LXC` zusammengezählt wird.
 
 ## Schnelle Live-Checks
 

@@ -34,8 +34,8 @@ class Proxmox extends \App\SupportedApps implements \App\EnhancedApps
     public function livestats()
     {
         $inactiveData = [
-            'container_running' => 0,
-            'container_total' => 0,
+            'guest_running' => 0,
+            'guest_total' => 0,
             'cpu_percent' => 0,
             'memory_percent' => 0,
         ];
@@ -46,8 +46,8 @@ class Proxmox extends \App\SupportedApps implements \App\EnhancedApps
             return parent::getLiveStats('inactive', $inactiveData);
         }
 
-        $containerRunning = 0;
-        $containerTotal = 0;
+        $guestRunning = 0;
+        $guestTotal = 0;
         $cpuPercentSum = 0.0;
         $memoryUsed = 0.0;
         $memoryTotal = 0.0;
@@ -62,10 +62,18 @@ class Proxmox extends \App\SupportedApps implements \App\EnhancedApps
                 $memoryTotal += (float) ($nodeStatus->memory->total ?? 0);
             }
 
+            $virtualMachineStats = $this->apiCall('nodes/'.$node.'/qemu');
+            if (is_array($virtualMachineStats)) {
+                $guestTotal += count($virtualMachineStats);
+                $guestRunning += count(array_filter($virtualMachineStats, function ($virtualMachine) {
+                    return isset($virtualMachine->status) && $virtualMachine->status === 'running';
+                }));
+            }
+
             $containerStats = $this->apiCall('nodes/'.$node.'/lxc');
             if (is_array($containerStats)) {
-                $containerTotal += count($containerStats);
-                $containerRunning += count(array_filter($containerStats, function ($container) {
+                $guestTotal += count($containerStats);
+                $guestRunning += count(array_filter($containerStats, function ($container) {
                     return isset($container->status) && $container->status === 'running';
                 }));
             }
@@ -76,8 +84,8 @@ class Proxmox extends \App\SupportedApps implements \App\EnhancedApps
         }
 
         return parent::getLiveStats('active', [
-            'container_running' => $containerRunning,
-            'container_total' => $containerTotal,
+            'guest_running' => $guestRunning,
+            'guest_total' => $guestTotal,
             'cpu_percent' => ($cpuPercentSum / $validNodes) * 100,
             'memory_percent' => $memoryTotal > 0 ? ($memoryUsed / $memoryTotal) * 100 : 0,
         ]);

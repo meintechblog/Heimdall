@@ -12,7 +12,7 @@ This fork carries local UI and dashboard behavior customizations on top of Heimd
 ## Branch model
 
 - Base branch: `2.x`
-- Custom branch: `codex/heimdall-dashboard-home-items`
+- Custom branch: `codex/heimdall-pimp`
 
 Keep `2.x` close to upstream Heimdall. Keep all Hulki-specific behavior on the custom branch.
 
@@ -48,7 +48,7 @@ git fetch origin
 git checkout 2.x
 git pull origin 2.x
 
-git checkout codex/heimdall-dashboard-home-items
+git checkout codex/heimdall-pimp
 git rebase 2.x
 ```
 
@@ -64,7 +64,30 @@ git rebase --continue
 ```bash
 npm run lint
 npm run test:js
+APP_ENV=testing DB_CONNECTION=sqlite DB_DATABASE=codex-fileflows-feature.sqlite php artisan test --filter=FileFlowsProcessingToggleTest
 npx mix
+```
+
+## Shortcut scripts
+
+For regular maintenance, use the wrapper scripts in `scripts/hulki/`:
+
+Update the custom branch on top of the latest Heimdall base and run the key checks:
+
+```bash
+./scripts/hulki/update-heimdall-custom-branch.sh
+```
+
+Do the same and deploy live immediately afterwards:
+
+```bash
+./scripts/hulki/update-heimdall-custom-branch.sh --deploy
+```
+
+Replay the current checked-out repo state to the live Heimdall instance without rebasing:
+
+```bash
+./scripts/hulki/replay-heimdall-overlay.sh
 ```
 
 ## Export the live overlay from the repo
@@ -130,10 +153,21 @@ For the FileFlows tile control, confirm:
 
 - only the two live FileFlows tiles remain visible
 - clicking the tile still opens FileFlows
-- clicking the small overlay button pauses or resumes processing
+- clicking the logo overlay pauses or resumes processing
 - the overlay icon switches between pause and play based on the current FileFlows state
+- `Fileflows MacMini 3.103` and `FileFlows NUC 3.12` stay reachable while toggling
+- pause uses a long-lived native FileFlows pause, not a 1-minute pause
 
 For remote icon downloads, the secure default is now TLS verification ON. If a live Heimdall instance still needs compatibility with invalid/self-signed remote icon certificates, set `ALLOW_INSECURE_REMOTE_ICON_TLS=true` in the live `.env`, clear config cache, and treat it as a temporary exception rather than the normal setup.
+
+## FileFlows guardrails
+
+The FileFlows pause/resume integration is intentionally implemented with the native FileFlows pause endpoint:
+
+- pause: `POST /api/system/pause?duration=52560000`
+- resume: `POST /api/system/pause?duration=0`
+
+Do not switch this customization to `ui-settings` writes for `PausedUntil`. On the MacMini FileFlows instance, that path caused the service to fall back to `/initial-config`.
 
 ## Notes
 

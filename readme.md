@@ -58,6 +58,33 @@ To update your instance, simply clone this repository or download the zip/tar fi
 ### Hulki fork workflow
 For the Hulki custom fork, use the repo-managed replay workflow in `docs/UPDATING_HULKI_FORK.md`. It covers rebasing the customization branch onto `2.x`, rebuilding assets, exporting the live overlay from the repo with stale-asset protection, syncing the host copy on `proxi1`, and redeploying into CT `100`.
 
+### Hulki custom features
+This fork also carries a small FileFlows dashboard extension for the two live FileFlows tiles:
+
+- the tile still opens FileFlows when you click the normal tile area
+- the logo area acts as a direct pause/resume toggle
+- the visible icon reflects the current FileFlows processing state
+
+For long-lived pause/resume, the Hulki fork intentionally uses the native FileFlows pause API:
+
+- pause: `POST /api/system/pause?duration=52560000`
+- resume: `POST /api/system/pause?duration=0`
+
+This is deliberate. A previous attempt to drive pause/resume through FileFlows `ui-settings` caused at least one live instance to redirect to `/initial-config`, so the fork now avoids that path.
+
+To replay the Hulki customizations quickly after a Heimdall update, use:
+
+```bash
+./scripts/hulki/update-heimdall-custom-branch.sh
+./scripts/hulki/replay-heimdall-overlay.sh
+```
+
+Or run the full update + deploy flow in one go:
+
+```bash
+./scripts/hulki/update-heimdall-custom-branch.sh --deploy
+```
+
 ## Homepage Search
 The homepage search field has two behaviors:
 

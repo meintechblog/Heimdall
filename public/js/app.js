@@ -4723,6 +4723,7 @@ if (fileInput && importButtons) {
 var REFRESH_INTERVAL_SMALL = 5000;
 var REFRESH_INTERVAL_BIG = 30000;
 var QUEUE_PROCESSING_INTERVAL = 1000;
+var INITIAL_REQUEST_STAGGER_MS = 150;
 var CONTAINER_SELECTOR = ".livestats-container";
 var fileFlowsTileControls = typeof window !== "undefined" && typeof window.initHeimdallFileFlowsTileControls === "function" ? window.initHeimdallFileFlowsTileControls({
   document: document,
@@ -4771,6 +4772,17 @@ function getQueueInterval(dataOnly, active) {
   }
   return REFRESH_INTERVAL_BIG;
 }
+function getInitialRequestDelay(index) {
+  return index * INITIAL_REQUEST_STAGGER_MS;
+}
+function queueInitialUpdates(containers, enqueueUpdate) {
+  var schedule = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : setTimeout;
+  Array.from(containers).forEach(function (container, index) {
+    schedule(function () {
+      enqueueUpdate(container);
+    }, getInitialRequestDelay(index));
+  });
+}
 
 /**
  * @param {HTMLElement} container
@@ -4790,7 +4802,7 @@ function createUpdateJob(container, queue) {
     }).then(function (data) {
       // eslint-disable-next-line no-param-reassign
       container.innerHTML = data.html;
-      if (fileFlowsTileControls && data.processingState && data.toggleAction) {
+      if (fileFlowsTileControls && data.processingState) {
         fileFlowsTileControls.updateTileState(container, data);
       }
       var isActive = data.status === "active";
@@ -4805,10 +4817,18 @@ function createUpdateJob(container, queue) {
     });
   };
 }
-var livestatContainers = getContainers();
-if (livestatContainers.length > 0) {
-  var myQueue = createQueue();
-  livestatContainers.forEach(function (container) {
-    createUpdateJob(container, myQueue)();
-  });
+if ((typeof module === "undefined" ? "undefined" : _typeof(module)) === "object" && module.exports) {
+  module.exports = {
+    getInitialRequestDelay: getInitialRequestDelay,
+    queueInitialUpdates: queueInitialUpdates
+  };
+}
+if (typeof document !== "undefined") {
+  var livestatContainers = getContainers();
+  if (livestatContainers.length > 0) {
+    var myQueue = createQueue();
+    queueInitialUpdates(livestatContainers, function (container) {
+      createUpdateJob(container, myQueue)();
+    });
+  }
 }

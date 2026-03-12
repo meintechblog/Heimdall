@@ -1,6 +1,7 @@
 const REFRESH_INTERVAL_SMALL = 5000;
 const REFRESH_INTERVAL_BIG = 30000;
 const QUEUE_PROCESSING_INTERVAL = 1000;
+const INITIAL_REQUEST_STAGGER_MS = 150;
 const CONTAINER_SELECTOR = ".livestats-container";
 const fileFlowsTileControls =
   typeof window !== "undefined" &&
@@ -61,6 +62,18 @@ function getQueueInterval(dataOnly, active) {
   return REFRESH_INTERVAL_BIG;
 }
 
+function getInitialRequestDelay(index) {
+  return index * INITIAL_REQUEST_STAGGER_MS;
+}
+
+function queueInitialUpdates(containers, enqueueUpdate, schedule = setTimeout) {
+  Array.from(containers).forEach((container, index) => {
+    schedule(() => {
+      enqueueUpdate(container);
+    }, getInitialRequestDelay(index));
+  });
+}
+
 /**
  * @param {HTMLElement} container
  * @param {array} queue
@@ -84,11 +97,7 @@ function createUpdateJob(container, queue) {
         // eslint-disable-next-line no-param-reassign
         container.innerHTML = data.html;
 
-        if (
-          fileFlowsTileControls &&
-          data.processingState &&
-          data.toggleAction
-        ) {
+        if (fileFlowsTileControls && data.processingState) {
           fileFlowsTileControls.updateTileState(container, data);
         }
 
@@ -106,12 +115,21 @@ function createUpdateJob(container, queue) {
       });
 }
 
-const livestatContainers = getContainers();
+if (typeof module === "object" && module.exports) {
+  module.exports = {
+    getInitialRequestDelay,
+    queueInitialUpdates,
+  };
+}
 
-if (livestatContainers.length > 0) {
-  const myQueue = createQueue();
+if (typeof document !== "undefined") {
+  const livestatContainers = getContainers();
 
-  livestatContainers.forEach((container) => {
-    createUpdateJob(container, myQueue)();
-  });
+  if (livestatContainers.length > 0) {
+    const myQueue = createQueue();
+
+    queueInitialUpdates(livestatContainers, (container) => {
+      createUpdateJob(container, myQueue)();
+    });
+  }
 }

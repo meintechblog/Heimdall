@@ -178,6 +178,7 @@ For FileFlows tiles, the safe live behavior is now:
 - unreachable FileFlows instances fall back to `Unavailable`
 - the dashboard should not sit on a 15-second FileFlows timeout anymore
 - the FileFlows tile button should stop spinning and become unavailable instead of returning `500`
+- initial live-stat requests are staggered slightly on dashboard load to reduce burst traffic
 
 For remote icon downloads, the secure default is now TLS verification ON. If a live Heimdall instance still needs compatibility with invalid/self-signed remote icon certificates, set `ALLOW_INSECURE_REMOTE_ICON_TLS=true` in the live `.env`, clear config cache, and treat it as a temporary exception rather than the normal setup.
 

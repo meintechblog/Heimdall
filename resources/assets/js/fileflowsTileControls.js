@@ -16,12 +16,12 @@
       : null);
   let bound = false;
 
-  function getButtonIcon(toggleAction) {
-    return toggleAction === "resume" ? "play" : "pause";
+  function getButtonIcon(processingState) {
+    return processingState === "paused" ? "pause" : "play";
   }
 
-  function getButtonMarkup(toggleAction) {
-    const icon = getButtonIcon(toggleAction);
+  function getButtonMarkup(processingState) {
+    const icon = getButtonIcon(processingState);
 
     if (icon === "play") {
       return `
@@ -67,7 +67,7 @@
     button.classList.toggle("is-paused", state.processingState === "paused");
     button.classList.toggle("is-running", state.processingState === "running");
     button.disabled = false;
-    button.innerHTML = getButtonMarkup(state.toggleAction).trim();
+    button.innerHTML = getButtonMarkup(state.processingState).trim();
 
     return button;
   }

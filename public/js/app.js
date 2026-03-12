@@ -4178,11 +4178,11 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
   var doc = options.document || document;
   var fetchImpl = options.fetch || (typeof window !== "undefined" && window.fetch ? window.fetch.bind(window) : null);
   var bound = false;
-  function getButtonIcon(toggleAction) {
-    return toggleAction === "resume" ? "play" : "pause";
+  function getButtonIcon(processingState) {
+    return processingState === "paused" ? "pause" : "play";
   }
-  function getButtonMarkup(toggleAction) {
-    var icon = getButtonIcon(toggleAction);
+  function getButtonMarkup(processingState) {
+    var icon = getButtonIcon(processingState);
     if (icon === "play") {
       return "\n        <svg class=\"fileflows-toggle-icon fileflows-toggle-icon-play\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">\n          <path d=\"M8 6.5v11l9-5.5-9-5.5z\"></path>\n        </svg>\n      ";
     }
@@ -4211,7 +4211,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     button.classList.toggle("is-paused", state.processingState === "paused");
     button.classList.toggle("is-running", state.processingState === "running");
     button.disabled = false;
-    button.innerHTML = getButtonMarkup(state.toggleAction).trim();
+    button.innerHTML = getButtonMarkup(state.processingState).trim();
     return button;
   }
   function handleToggleClick(_x) {

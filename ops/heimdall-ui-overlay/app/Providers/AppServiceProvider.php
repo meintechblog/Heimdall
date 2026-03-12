@@ -38,6 +38,20 @@ class AppServiceProvider extends ServiceProvider
             \Session::put('current_user', null);
         }
 
+        if ($this->app->runningUnitTests() || $this->app->runningConsoleCommand('test')) {
+            $this->app['view']->addNamespace('SupportedApps', app_path('SupportedApps'));
+
+            if (env('FORCE_HTTPS') === true) {
+                \URL::forceScheme('https');
+            }
+
+            if (env('APP_URL') != 'http://localhost') {
+                \URL::forceRootUrl(env('APP_URL'));
+            }
+
+            return;
+        }
+
         $applications = Application::all();
 
         if ($applications->count() <= 0) {

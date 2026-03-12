@@ -2,6 +2,14 @@ const REFRESH_INTERVAL_SMALL = 5000;
 const REFRESH_INTERVAL_BIG = 30000;
 const QUEUE_PROCESSING_INTERVAL = 1000;
 const CONTAINER_SELECTOR = ".livestats-container";
+const fileFlowsTileControls =
+  typeof window !== "undefined" &&
+  typeof window.initHeimdallFileFlowsTileControls === "function"
+    ? window.initHeimdallFileFlowsTileControls({
+        document,
+        fetch: window.fetch.bind(window),
+      })
+    : null;
 
 /**
  * @returns {*[]}
@@ -75,6 +83,14 @@ function createUpdateJob(container, queue) {
       .then((data) => {
         // eslint-disable-next-line no-param-reassign
         container.innerHTML = data.html;
+
+        if (
+          fileFlowsTileControls &&
+          data.processingState &&
+          data.toggleAction
+        ) {
+          fileFlowsTileControls.updateTileState(container, data);
+        }
 
         const isActive = data.status === "active";
 

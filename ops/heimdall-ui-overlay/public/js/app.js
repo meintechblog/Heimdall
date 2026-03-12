@@ -1,3 +1,7 @@
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { if (r) i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n;else { var o = function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); }; o("next", 0), o("throw", 1), o("return", 2); } }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 /*! Sortable 1.15.6 - MIT | git://github.com/SortableJS/Sortable.git */
 !function (t, e) {
@@ -4161,6 +4165,123 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     updateTagButtonCounts: updateTagButtonCounts
   };
 });
+(function registerFileFlowsTileControls(root, factory) {
+  if ((typeof module === "undefined" ? "undefined" : _typeof(module)) === "object" && module.exports) {
+    module.exports = factory;
+  }
+  var rootScope = root;
+  if (rootScope) {
+    rootScope.initHeimdallFileFlowsTileControls = factory;
+  }
+})(typeof window !== "undefined" ? window : undefined, function () {
+  var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  var doc = options.document || document;
+  var fetchImpl = options.fetch || (typeof window !== "undefined" && window.fetch ? window.fetch.bind(window) : null);
+  var bound = false;
+  function getButtonIcon(toggleAction) {
+    return toggleAction === "resume" ? "play" : "pause";
+  }
+  function getButtonLabel(toggleAction) {
+    return toggleAction === "resume" ? "Resume FileFlows" : "Pause FileFlows";
+  }
+  function getButtonForElement(element) {
+    var itemContainer = element.closest(".item-container");
+    if (!itemContainer) {
+      return null;
+    }
+    return itemContainer.querySelector(".fileflows-processing-toggle");
+  }
+  function updateTileState(element) {
+    var state = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    var button = getButtonForElement(element);
+    if (!button || !state.processingState || !state.toggleAction) {
+      return null;
+    }
+    var icon = getButtonIcon(state.toggleAction);
+    button.dataset.processingState = state.processingState;
+    button.dataset.toggleAction = state.toggleAction;
+    button.setAttribute("aria-label", getButtonLabel(state.toggleAction));
+    button.setAttribute("title", getButtonLabel(state.toggleAction));
+    button.classList.toggle("is-paused", state.processingState === "paused");
+    button.classList.toggle("is-running", state.processingState === "running");
+    button.disabled = false;
+    button.innerHTML = "<i class=\"fas fa-".concat(icon, "\"></i>");
+    return button;
+  }
+  function handleToggleClick(_x) {
+    return _handleToggleClick.apply(this, arguments);
+  }
+  function _handleToggleClick() {
+    _handleToggleClick = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(event) {
+      var button, response, data, _t3;
+      return _regenerator().w(function (_context) {
+        while (1) switch (_context.p = _context.n) {
+          case 0:
+            button = event.target.closest(".fileflows-processing-toggle");
+            if (button) {
+              _context.n = 1;
+              break;
+            }
+            return _context.a(2);
+          case 1:
+            event.preventDefault();
+            event.stopPropagation();
+            if (!(!fetchImpl || button.disabled)) {
+              _context.n = 2;
+              break;
+            }
+            return _context.a(2);
+          case 2:
+            button.disabled = true;
+            _context.p = 3;
+            _context.n = 4;
+            return fetchImpl(button.dataset.toggleUrl, {
+              method: "POST",
+              headers: {
+                "X-Requested-With": "XMLHttpRequest"
+              }
+            });
+          case 4:
+            response = _context.v;
+            if (response.ok) {
+              _context.n = 5;
+              break;
+            }
+            throw new Error("Toggle failed: ".concat(response.status));
+          case 5:
+            _context.n = 6;
+            return response.json();
+          case 6:
+            data = _context.v;
+            updateTileState(button, data);
+            _context.n = 8;
+            break;
+          case 7:
+            _context.p = 7;
+            _t3 = _context.v;
+            button.disabled = false;
+            // eslint-disable-next-line no-console
+            console.error(_t3);
+          case 8:
+            return _context.a(2);
+        }
+      }, _callee, null, [[3, 7]]);
+    }));
+    return _handleToggleClick.apply(this, arguments);
+  }
+  function bindToggleButtons() {
+    if (bound) {
+      return;
+    }
+    doc.addEventListener("click", handleToggleClick);
+    bound = true;
+  }
+  bindToggleButtons();
+  return {
+    bindToggleButtons: bindToggleButtons,
+    updateTileState: updateTileState
+  };
+});
 
 /* eslint-disable func-names */
 $.when($.ready).then(function () {
@@ -4583,6 +4704,10 @@ var REFRESH_INTERVAL_SMALL = 5000;
 var REFRESH_INTERVAL_BIG = 30000;
 var QUEUE_PROCESSING_INTERVAL = 1000;
 var CONTAINER_SELECTOR = ".livestats-container";
+var fileFlowsTileControls = typeof window !== "undefined" && typeof window.initHeimdallFileFlowsTileControls === "function" ? window.initHeimdallFileFlowsTileControls({
+  document: document,
+  fetch: window.fetch.bind(window)
+}) : null;
 
 /**
  * @returns {*[]}
@@ -4645,6 +4770,9 @@ function createUpdateJob(container, queue) {
     }).then(function (data) {
       // eslint-disable-next-line no-param-reassign
       container.innerHTML = data.html;
+      if (fileFlowsTileControls && data.processingState && data.toggleAction) {
+        fileFlowsTileControls.updateTileState(container, data);
+      }
       var isActive = data.status === "active";
       if (queue) {
         setTimeout(function () {

@@ -12,9 +12,11 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\ServerException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
@@ -26,6 +28,8 @@ use enshrined\svgSanitize\Sanitizer;
 
 class ItemController extends Controller
 {
+    protected const FILEFLOWS_CLASS = 'App\\SupportedApps\\FileFlows\\FileFlows';
+
     public function __construct()
     {
         parent::__construct();
@@ -590,16 +594,124 @@ class ItemController extends Controller
      * @param $id
      * @return void
      */
-    public function getStats($id)
+    public function getStats($id): JsonResponse
     {
         $item = Item::find($id);
+
+        if (! $item) {
+            abort(Response::HTTP_NOT_FOUND);
+        }
+
+        if ($this->isFileFlowsItem($item) && $item->enabled()) {
+            return response()->json($this->fileFlowsStatsPayload($item));
+        }
 
         $config = $item->getconfig();
         if (isset($item->class)) {
             $application = new $item->class;
             $application->config = $config;
-            echo $application->livestats();
+            return response()->json(json_decode($application->livestats(), true));
         }
+
+        return response()->json([
+            'status' => 'inactive',
+            'html' => '',
+        ]);
+    }
+
+    public function toggleFileFlowsProcessing(int $id): JsonResponse
+    {
+        $item = Item::find($id);
+
+        if (! $item || ! $this->isFileFlowsItem($item)) {
+            abort(Response::HTTP_NOT_FOUND);
+        }
+
+        $settings = $this->fileFlowsSettings($item);
+
+        if ((bool) ($settings['IsPaused'] ?? false)) {
+            $response = $this->fileFlowsRequest($item, 'post', 'api/system/pause?abort=true');
+        } else {
+            $response = $this->fileFlowsRequest($item, 'post', 'api/system/pause?duration=1');
+        }
+
+        if (! $response->successful()) {
+            abort(Response::HTTP_BAD_GATEWAY, 'Failed to toggle FileFlows processing state.');
+        }
+
+        return response()->json($this->fileFlowsStatsPayload($item));
+    }
+
+    protected function isFileFlowsItem(Item $item): bool
+    {
+        return $item->class === self::FILEFLOWS_CLASS;
+    }
+
+    protected function fileFlowsStatsPayload(Item $item): array
+    {
+        $statusDetails = $this->fileFlowsStatus($item);
+        $settings = $this->fileFlowsSettings($item);
+        $queue = (int) ($statusDetails['queue'] ?? 0);
+        $processing = (int) ($statusDetails['processing'] ?? 0);
+        $processed = (int) ($statusDetails['processed'] ?? 0);
+        $time = (string) ($statusDetails['time'] ?? '');
+        $isPaused = (bool) ($settings['IsPaused'] ?? false);
+
+        $data = [
+            'queue' => $queue,
+        ];
+
+        if ($time !== '') {
+            $data['second_label'] = 'Time';
+            $data['second_value'] = $time;
+        } elseif ($processing === 0) {
+            $data['second_label'] = 'Processed';
+            $data['second_value'] = $processed;
+        } else {
+            $data['second_label'] = 'Processing';
+            $data['second_value'] = $processing;
+        }
+
+        return [
+            'status' => ($queue > 0 || $processing > 0 || $isPaused) ? 'active' : 'inactive',
+            'html' => view('items.livestats.fileflows', $data)->render(),
+            'queue' => $queue,
+            'processingState' => $isPaused ? 'paused' : 'running',
+            'toggleAction' => $isPaused ? 'resume' : 'pause',
+            'pausedUntil' => $settings['PausedUntil'] ?? null,
+        ];
+    }
+
+    protected function fileFlowsStatus(Item $item): array
+    {
+        $response = $this->fileFlowsRequest($item, 'get', 'api/status');
+
+        if (! $response->successful()) {
+            abort(Response::HTTP_BAD_GATEWAY, 'Failed to fetch FileFlows status.');
+        }
+
+        return $response->json() ?? [];
+    }
+
+    protected function fileFlowsSettings(Item $item): array
+    {
+        $response = $this->fileFlowsRequest($item, 'get', 'api/settings');
+
+        if (! $response->successful()) {
+            abort(Response::HTTP_BAD_GATEWAY, 'Failed to fetch FileFlows settings.');
+        }
+
+        return $response->json() ?? [];
+    }
+
+    protected function fileFlowsRequest(Item $item, string $method, string $endpoint)
+    {
+        $url = rtrim($item->getconfig()->url, '/').'/'.$endpoint;
+
+        return Http::timeout(15)
+            ->connectTimeout(15)
+            ->acceptJson()
+            ->send($method, $url);
     }
 
     protected static function remoteIconStreamContextOptions(): array

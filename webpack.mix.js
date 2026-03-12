@@ -18,6 +18,7 @@ mix
       "resources/assets/js/jquery-ui.min.js",
       "resources/assets/js/huebee.js",
       "resources/assets/js/dashboardFilters.js",
+      "resources/assets/js/fileflowsTileControls.js",
       "resources/assets/js/app.js",
       "resources/assets/js/keyBindings.js",
       "resources/assets/js/itemExport.js",

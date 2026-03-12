@@ -23,13 +23,18 @@ The overlay export currently includes:
 - `app/Search.php`
 - `app/Providers/AppServiceProvider.php`
 - `app/Http/Controllers/ItemController.php`
+- `bootstrap/app.php`
 - `config/app.php`
 - `resources/assets/js/app.js`
 - `resources/assets/js/dashboardFilters.js`
+- `resources/assets/js/fileflowsTileControls.js`
 - `resources/assets/sass/_app.scss`
+- `resources/views/item.blade.php`
+- `resources/views/items/livestats/fileflows.blade.php`
 - `resources/views/partials/taglist.blade.php`
 - `resources/views/sortable.blade.php`
 - `resources/views/welcome.blade.php`
+- `routes/web.php`
 - `public/js/app.js`
 - `public/css/app.css`
 - `public/mix-manifest.json`
@@ -120,6 +125,13 @@ For the dashboard search behavior, confirm:
 - typing filters tiles live
 - `Enter` opens Google in a new tab
 - duplicate apps that belong to multiple categories appear only once while filtered
+
+For the FileFlows tile control, confirm:
+
+- only the two live FileFlows tiles remain visible
+- clicking the tile still opens FileFlows
+- clicking the small overlay button pauses or resumes processing
+- the overlay icon switches between pause and play based on the current FileFlows state
 
 For remote icon downloads, the secure default is now TLS verification ON. If a live Heimdall instance still needs compatibility with invalid/self-signed remote icon certificates, set `ALLOW_INSECURE_REMOTE_ICON_TLS=true` in the live `.env`, clear config cache, and treat it as a temporary exception rather than the normal setup.
 

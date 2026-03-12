@@ -228,6 +228,42 @@ body {
   background: #cfd2d4;
 }
 
+.app-icon-container {
+  position: relative;
+}
+
+.fileflows-processing-toggle {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(10, 16, 24, 0.92);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease, opacity 0.18s ease;
+  z-index: 1;
+}
+.fileflows-processing-toggle:hover {
+  transform: scale(1.06);
+}
+.fileflows-processing-toggle.is-running {
+  background: rgba(166, 24, 46, 0.92);
+}
+.fileflows-processing-toggle.is-paused {
+  background: rgba(20, 121, 84, 0.92);
+}
+.fileflows-processing-toggle:disabled {
+  cursor: progress;
+  opacity: 0.75;
+}
+
 #switchuser {
   background: rgba(0, 0, 0, 0.5);
   position: absolute;

@@ -57,7 +57,8 @@ test("updates the fileflows button to pause when the backend reports running", (
   assert.match(button.getAttribute("aria-label"), /Pause/i);
   assert.match(button.innerHTML, /fileflows-toggle-icon/);
   assert.match(button.innerHTML, /fileflows-toggle-icon-play/);
-  assert.doesNotMatch(button.innerHTML, /fileflows-toggle-loading-ring/);
+  assert.match(button.innerHTML, /tile-icon-loading-visual/);
+  assert.doesNotMatch(button.innerHTML, /tile-icon-loading-spinner-ring/);
 });
 
 test("shows a spinner ring around the fileflows icon while work is running", () => {
@@ -76,7 +77,7 @@ test("shows a spinner ring around the fileflows icon while work is running", () 
 
   assert.equal(button.dataset.processingState, "running");
   assert.equal(button.dataset.busy, "true");
-  assert.match(button.innerHTML, /fileflows-toggle-loading-ring/);
+  assert.match(button.innerHTML, /tile-icon-loading-spinner-ring/);
 });
 
 test("clicking the mini button posts to the FileFlows toggle endpoint without opening the tile", async () => {

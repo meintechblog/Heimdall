@@ -4186,7 +4186,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
   }
   function getButtonMarkup(processingState, isBusy) {
     var icon = getButtonIcon(processingState);
-    var spinnerMarkup = isBusy && icon !== "unavailable" ? "\n        <span class=\"fileflows-toggle-loading fileflows-toggle-loading-ring\" aria-hidden=\"true\"></span>\n      " : "";
+    var spinnerMarkup = isBusy && icon !== "unavailable" ? "\n        <span class=\"tile-icon-loading-spinner tile-icon-loading-spinner-ring\" aria-hidden=\"true\"></span>\n      " : "";
     var iconMarkup = "";
     if (icon === "play") {
       iconMarkup = "\n        <svg class=\"fileflows-toggle-icon fileflows-toggle-icon-play\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">\n          <path d=\"M8 6.5v11l9-5.5-9-5.5z\"></path>\n        </svg>\n      ";
@@ -4195,7 +4195,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     } else {
       iconMarkup = "\n      <svg class=\"fileflows-toggle-icon fileflows-toggle-icon-pause\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">\n        <rect x=\"7\" y=\"6\" width=\"4\" height=\"12\" rx=\"1\"></rect>\n        <rect x=\"13\" y=\"6\" width=\"4\" height=\"12\" rx=\"1\"></rect>\n      </svg>\n    ";
     }
-    return "\n      <span class=\"fileflows-toggle-visual\">\n        ".concat(spinnerMarkup, "\n        ").concat(iconMarkup, "\n      </span>\n    ");
+    return "\n      <span class=\"tile-icon-loading-visual\">\n        ".concat(spinnerMarkup, "\n        ").concat(iconMarkup, "\n      </span>\n    ");
   }
   function getButtonLabel(toggleAction) {
     if (toggleAction === null) {
@@ -4731,6 +4731,7 @@ var REFRESH_INTERVAL_BIG = 30000;
 var QUEUE_PROCESSING_INTERVAL = 1000;
 var INITIAL_REQUEST_STAGGER_MS = 150;
 var CONTAINER_SELECTOR = ".livestats-container";
+var ICON_LOADING_OVERLAY_SELECTOR = ".tile-icon-loading-overlay";
 var fileFlowsTileControls = typeof window !== "undefined" && typeof window.initHeimdallFileFlowsTileControls === "function" ? window.initHeimdallFileFlowsTileControls({
   document: document,
   fetch: window.fetch.bind(window)
@@ -4762,24 +4763,24 @@ function createQueue() {
 function getContainers() {
   return document.querySelectorAll(CONTAINER_SELECTOR);
 }
-function getIconLoadingIndicator(container) {
+function getIconLoadingOverlay(container) {
   var itemContainer = container && typeof container.closest === "function" ? container.closest(".item-container") : null;
   if (!itemContainer) {
     return null;
   }
-  return itemContainer.querySelector(".venus-icon-loading");
+  return itemContainer.querySelector(ICON_LOADING_OVERLAY_SELECTOR);
 }
-function primeIconLoadingIndicator(container) {
-  var indicator = getIconLoadingIndicator(container);
+function primeIconLoadingOverlay(container) {
+  var indicator = getIconLoadingOverlay(container);
   if (!indicator) {
     return;
   }
   container.setAttribute("data-loading-state", "loading");
   indicator.classList.remove("is-hidden");
 }
-function completeIconLoadingIndicator(container) {
+function completeIconLoadingOverlay(container) {
   var failed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-  var indicator = getIconLoadingIndicator(container);
+  var indicator = getIconLoadingOverlay(container);
   if (!indicator) {
     return;
   }
@@ -4939,7 +4940,7 @@ function createUpdateJob(container, scheduleUpdate, visibilityTracker) {
     }).then(function (data) {
       // eslint-disable-next-line no-param-reassign
       container.innerHTML = data.html;
-      completeIconLoadingIndicator(container);
+      completeIconLoadingOverlay(container);
       if (fileFlowsTileControls && data.processingState) {
         fileFlowsTileControls.updateTileState(container, data);
       }
@@ -4951,7 +4952,7 @@ function createUpdateJob(container, scheduleUpdate, visibilityTracker) {
       // eslint-disable-next-line no-console
       console.error(error);
       if (container.getAttribute("data-loading-state") === "loading") {
-        completeIconLoadingIndicator(container, true);
+        completeIconLoadingOverlay(container, true);
       }
       if (scheduleUpdate) {
         scheduleUpdate(container, REFRESH_INTERVAL_BIG);
@@ -4964,9 +4965,9 @@ if ((typeof module === "undefined" ? "undefined" : _typeof(module)) === "object"
     createActivityTracker: createActivityTracker,
     createVisibilityTracker: createVisibilityTracker,
     getInitialRequestDelay: getInitialRequestDelay,
-    getIconLoadingIndicator: getIconLoadingIndicator,
-    primeIconLoadingIndicator: primeIconLoadingIndicator,
-    completeIconLoadingIndicator: completeIconLoadingIndicator,
+    getIconLoadingOverlay: getIconLoadingOverlay,
+    primeIconLoadingOverlay: primeIconLoadingOverlay,
+    completeIconLoadingOverlay: completeIconLoadingOverlay,
     queueInitialUpdates: queueInitialUpdates,
     scheduleVisibleContainers: scheduleVisibleContainers
   };
@@ -4975,7 +4976,7 @@ if (typeof document !== "undefined") {
   var livestatContainers = getContainers();
   if (livestatContainers.length > 0) {
     Array.from(livestatContainers).forEach(function (container) {
-      primeIconLoadingIndicator(container);
+      primeIconLoadingOverlay(container);
     });
     var myQueue = createQueue();
     var activityTracker = createActivityTracker(document);

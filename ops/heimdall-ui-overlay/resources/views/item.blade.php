@@ -11,9 +11,9 @@
                                 <img class="app-icon" src="{{ asset('/img/heimdall-icon-small.png') }}" />
                                 @endif
                                 @if($liveAppName === 'VenusOS' && $app->enabled())
-                                <div class="venus-icon-loading" aria-hidden="true">
-                                    <span class="fileflows-toggle-visual">
-                                        <span class="fileflows-toggle-loading fileflows-toggle-loading-ring" aria-hidden="true"></span>
+                                <div class="tile-icon-loading-overlay" aria-hidden="true">
+                                    <span class="tile-icon-loading-visual">
+                                        <span class="tile-icon-loading-spinner tile-icon-loading-spinner-ring" aria-hidden="true"></span>
                                     </span>
                                 </div>
                                 @endif
@@ -28,8 +28,8 @@
                                     aria-label="Loading FileFlows state"
                                     title="Loading FileFlows state"
                                 >
-                                    <span class="fileflows-toggle-visual">
-                                        <span class="fileflows-toggle-loading fileflows-toggle-loading-ring" aria-hidden="true"></span>
+                                    <span class="tile-icon-loading-visual">
+                                        <span class="tile-icon-loading-spinner tile-icon-loading-spinner-ring" aria-hidden="true"></span>
                                     </span>
                                 </button>
                                 @endif

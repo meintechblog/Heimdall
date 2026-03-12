@@ -29,7 +29,7 @@
     const spinnerMarkup =
       isBusy && icon !== "unavailable"
         ? `
-        <span class="fileflows-toggle-loading fileflows-toggle-loading-ring" aria-hidden="true"></span>
+        <span class="tile-icon-loading-spinner tile-icon-loading-spinner-ring" aria-hidden="true"></span>
       `
         : "";
     let iconMarkup = "";
@@ -56,7 +56,7 @@
     }
 
     return `
-      <span class="fileflows-toggle-visual">
+      <span class="tile-icon-loading-visual">
         ${spinnerMarkup}
         ${iconMarkup}
       </span>

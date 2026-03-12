@@ -3,6 +3,7 @@ const REFRESH_INTERVAL_BIG = 30000;
 const QUEUE_PROCESSING_INTERVAL = 1000;
 const INITIAL_REQUEST_STAGGER_MS = 150;
 const CONTAINER_SELECTOR = ".livestats-container";
+const ICON_LOADING_OVERLAY_SELECTOR = ".tile-icon-loading-overlay";
 const fileFlowsTileControls =
   typeof window !== "undefined" &&
   typeof window.initHeimdallFileFlowsTileControls === "function"
@@ -44,7 +45,7 @@ function getContainers() {
   return document.querySelectorAll(CONTAINER_SELECTOR);
 }
 
-function getIconLoadingIndicator(container) {
+function getIconLoadingOverlay(container) {
   const itemContainer =
     container && typeof container.closest === "function"
       ? container.closest(".item-container")
@@ -54,11 +55,11 @@ function getIconLoadingIndicator(container) {
     return null;
   }
 
-  return itemContainer.querySelector(".venus-icon-loading");
+  return itemContainer.querySelector(ICON_LOADING_OVERLAY_SELECTOR);
 }
 
-function primeIconLoadingIndicator(container) {
-  const indicator = getIconLoadingIndicator(container);
+function primeIconLoadingOverlay(container) {
+  const indicator = getIconLoadingOverlay(container);
 
   if (!indicator) {
     return;
@@ -68,8 +69,8 @@ function primeIconLoadingIndicator(container) {
   indicator.classList.remove("is-hidden");
 }
 
-function completeIconLoadingIndicator(container, failed = false) {
-  const indicator = getIconLoadingIndicator(container);
+function completeIconLoadingOverlay(container, failed = false) {
+  const indicator = getIconLoadingOverlay(container);
 
   if (!indicator) {
     return;
@@ -272,7 +273,7 @@ function createUpdateJob(container, scheduleUpdate, visibilityTracker) {
       .then((data) => {
         // eslint-disable-next-line no-param-reassign
         container.innerHTML = data.html;
-        completeIconLoadingIndicator(container);
+        completeIconLoadingOverlay(container);
 
         if (fileFlowsTileControls && data.processingState) {
           fileFlowsTileControls.updateTileState(container, data);
@@ -288,7 +289,7 @@ function createUpdateJob(container, scheduleUpdate, visibilityTracker) {
         // eslint-disable-next-line no-console
         console.error(error);
         if (container.getAttribute("data-loading-state") === "loading") {
-          completeIconLoadingIndicator(container, true);
+          completeIconLoadingOverlay(container, true);
         }
         if (scheduleUpdate) {
           scheduleUpdate(container, REFRESH_INTERVAL_BIG);
@@ -302,9 +303,9 @@ if (typeof module === "object" && module.exports) {
     createActivityTracker,
     createVisibilityTracker,
     getInitialRequestDelay,
-    getIconLoadingIndicator,
-    primeIconLoadingIndicator,
-    completeIconLoadingIndicator,
+    getIconLoadingOverlay,
+    primeIconLoadingOverlay,
+    completeIconLoadingOverlay,
     queueInitialUpdates,
     scheduleVisibleContainers,
   };
@@ -315,7 +316,7 @@ if (typeof document !== "undefined") {
 
   if (livestatContainers.length > 0) {
     Array.from(livestatContainers).forEach((container) => {
-      primeIconLoadingIndicator(container);
+      primeIconLoadingOverlay(container);
     });
 
     const myQueue = createQueue();

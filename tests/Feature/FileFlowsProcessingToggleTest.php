@@ -39,6 +39,27 @@ class FileFlowsProcessingToggleTest extends TestCase
         $response->assertJsonPath('html', fn ($html) => is_string($html) && str_contains($html, 'Queue'));
     }
 
+    public function test_get_stats_returns_unavailable_state_when_fileflows_is_unreachable(): void
+    {
+        $this->seed();
+
+        Http::fake([
+            'http://fileflows.local/api/status' => Http::failedConnection(),
+            'http://fileflows.local/api/settings' => Http::failedConnection(),
+        ]);
+
+        $item = $this->createFileFlowsItem();
+
+        $response = $this->get('/get_stats/'.$item->id);
+
+        $response->assertOk();
+        $response->assertJsonPath('status', 'inactive');
+        $response->assertJsonPath('processingState', 'unavailable');
+        $response->assertJsonPath('toggleAction', null);
+        $response->assertJsonPath('queue', 0);
+        $response->assertJsonPath('html', fn ($html) => is_string($html) && str_contains($html, 'Unavailable'));
+    }
+
     public function test_toggle_endpoint_resumes_a_paused_fileflows_instance(): void
     {
         $this->seed();

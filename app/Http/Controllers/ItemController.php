@@ -654,8 +654,15 @@ class ItemController extends Controller
 
     protected function fileFlowsStatsPayload(Item $item): array
     {
-        $statusDetails = $this->fileFlowsStatus($item);
-        $settings = $this->fileFlowsSettings($item);
+        try {
+            $statusDetails = $this->fileFlowsStatus($item);
+            $settings = $this->fileFlowsSettings($item);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return $this->fileFlowsUnavailablePayload();
+        }
+
         $queue = (int) ($statusDetails['queue'] ?? 0);
         $processing = (int) ($statusDetails['processing'] ?? 0);
         $processed = (int) ($statusDetails['processed'] ?? 0);
@@ -687,6 +694,24 @@ class ItemController extends Controller
         ];
     }
 
+    protected function fileFlowsUnavailablePayload(): array
+    {
+        $data = [
+            'queue' => 0,
+            'second_label' => 'Status',
+            'second_value' => 'Unavailable',
+        ];
+
+        return [
+            'status' => 'inactive',
+            'html' => view('items.livestats.fileflows', $data)->render(),
+            'queue' => 0,
+            'processingState' => 'unavailable',
+            'toggleAction' => null,
+            'pausedUntil' => null,
+        ];
+    }
+
     protected function fileFlowsStatus(Item $item): array
     {
         $response = $this->fileFlowsRequest($item, 'get', 'api/status');
@@ -713,8 +738,8 @@ class ItemController extends Controller
     {
         $url = rtrim($item->getconfig()->url, '/').'/'.$endpoint;
 
-        return Http::timeout(15)
-            ->connectTimeout(15)
+        return Http::timeout(3)
+            ->connectTimeout(2)
             ->acceptJson()
             ->send($method, $url, $options);
     }

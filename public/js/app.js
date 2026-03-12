@@ -4179,6 +4179,9 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
   var fetchImpl = options.fetch || (typeof window !== "undefined" && window.fetch ? window.fetch.bind(window) : null);
   var bound = false;
   function getButtonIcon(processingState) {
+    if (processingState === "unavailable") {
+      return "unavailable";
+    }
     return processingState === "paused" ? "pause" : "play";
   }
   function getButtonMarkup(processingState) {
@@ -4186,9 +4189,15 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     if (icon === "play") {
       return "\n        <svg class=\"fileflows-toggle-icon fileflows-toggle-icon-play\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">\n          <path d=\"M8 6.5v11l9-5.5-9-5.5z\"></path>\n        </svg>\n      ";
     }
+    if (icon === "unavailable") {
+      return "\n        <svg class=\"fileflows-toggle-icon fileflows-toggle-icon-unavailable\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">\n          <path d=\"M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-2h2zm0-4h-2V7h2z\"></path>\n        </svg>\n      ";
+    }
     return "\n      <svg class=\"fileflows-toggle-icon fileflows-toggle-icon-pause\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">\n        <rect x=\"7\" y=\"6\" width=\"4\" height=\"12\" rx=\"1\"></rect>\n        <rect x=\"13\" y=\"6\" width=\"4\" height=\"12\" rx=\"1\"></rect>\n      </svg>\n    ";
   }
   function getButtonLabel(toggleAction) {
+    if (toggleAction === null) {
+      return "FileFlows unavailable";
+    }
     return toggleAction === "resume" ? "Resume FileFlows" : "Pause FileFlows";
   }
   function getButtonForElement(element) {
@@ -4201,16 +4210,21 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
   function updateTileState(element) {
     var state = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
     var button = getButtonForElement(element);
-    if (!button || !state.processingState || !state.toggleAction) {
+    if (!button || !state.processingState || state.processingState !== "unavailable" && !state.toggleAction) {
       return null;
     }
     button.dataset.processingState = state.processingState;
-    button.dataset.toggleAction = state.toggleAction;
+    if (state.toggleAction) {
+      button.dataset.toggleAction = state.toggleAction;
+    } else {
+      delete button.dataset.toggleAction;
+    }
     button.setAttribute("aria-label", getButtonLabel(state.toggleAction));
     button.setAttribute("title", getButtonLabel(state.toggleAction));
     button.classList.toggle("is-paused", state.processingState === "paused");
     button.classList.toggle("is-running", state.processingState === "running");
-    button.disabled = false;
+    button.classList.toggle("is-unavailable", state.processingState === "unavailable");
+    button.disabled = state.processingState === "unavailable";
     button.innerHTML = getButtonMarkup(state.processingState).trim();
     return button;
   }

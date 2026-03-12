@@ -171,6 +171,14 @@ For the Proxmox tile customization, confirm:
 - a configured tile shows `Guests`, `CPU`, and `RAM`
 - node filtering still works when multiple nodes are configured as a comma-separated list
 
+For live operations, keep CT100 on a normal web stack (`nginx` + `php-fpm`) instead of `php artisan serve`. The built-in Laravel dev server is acceptable for quick local testing, but it is too fragile for live dashboard traffic and multiple parallel live-stat requests.
+
+For FileFlows tiles, the safe live behavior is now:
+
+- unreachable FileFlows instances fall back to `Unavailable`
+- the dashboard should not sit on a 15-second FileFlows timeout anymore
+- the FileFlows tile button should stop spinning and become unavailable instead of returning `500`
+
 For remote icon downloads, the secure default is now TLS verification ON. If a live Heimdall instance still needs compatibility with invalid/self-signed remote icon certificates, set `ALLOW_INSECURE_REMOTE_ICON_TLS=true` in the live `.env`, clear config cache, and treat it as a temporary exception rather than the normal setup.
 
 ## FileFlows guardrails

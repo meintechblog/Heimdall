@@ -38,6 +38,8 @@ class AppServiceProvider extends ServiceProvider
             \Session::put('current_user', null);
         }
 
+        $this->registerGlobalViewState($this->app->runningUnitTests() || $this->app->runningConsoleCommand('test'));
+
         if ($this->app->runningUnitTests() || $this->app->runningConsoleCommand('test')) {
             $this->app['view']->addNamespace('SupportedApps', app_path('SupportedApps'));
 
@@ -60,57 +62,6 @@ class AppServiceProvider extends ServiceProvider
 
         $lang = Setting::fetch('language') ?: config('app.locale', 'en');
         \App::setLocale($lang);
-
-        // User specific settings need to go here as session isn't available at this point in the app
-        view()->composer('*', function ($view) {
-            if (isset($_SERVER['HTTP_AUTHORIZATION']) && ! empty($_SERVER['HTTP_AUTHORIZATION'])) {
-                list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) =
-                explode(':', base64_decode(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
-            }
-            if (! \Auth::check()) {
-                if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])
-                        && ! empty($_SERVER['PHP_AUTH_USER']) && ! empty($_SERVER['PHP_AUTH_PW'])) {
-                    $credentials = ['username' => $_SERVER['PHP_AUTH_USER'], 'password' => $_SERVER['PHP_AUTH_PW']];
-
-                    if (\Auth::attempt($credentials, true)) {
-                        // Authentication passed...
-                        $user = \Auth::user();
-                        //\Session::put('current_user', $user);
-                        session(['current_user' => $user]);
-                    }
-                } elseif (isset($_SERVER['REMOTE_USER']) && ! empty($_SERVER['REMOTE_USER'])) {
-                    $user = User::where('username', $_SERVER['REMOTE_USER'])->first();
-                    if ($user) {
-                        \Auth::login($user, true);
-                        session(['current_user' => $user]);
-                    }
-                }
-            }
-
-            $alt_bg = '';
-            $trianglify = 'false';
-            $trianglify_seed = null;
-            if (Setting::fetch('trianglify')) {
-                $trianglify = 'true';
-                $trianglify_seed = Setting::fetch('trianglify_seed');
-            } elseif ($bg_image = Setting::fetch('background_image')) {
-                $alt_bg = ' style="background-image: url(storage/'.$bg_image.')"';
-            }
-
-            $allusers = User::all();
-            $current_user = User::currentUser();
-
-            $view->with('alt_bg', $alt_bg);
-            $view->with('trianglify', $trianglify);
-            $view->with('trianglify_seed', $trianglify_seed);
-            $view->with('allusers', $allusers);
-            $view->with('current_user', $current_user);
-            if (config('app.auth_roles_enable')) {
-                $view->with('enable_auth_admin_controls', in_array(config('app.auth_roles_admin'), explode(config('app.auth_roles_delimiter'), $_SERVER[config('app.auth_roles_http_header')])));
-            } else {
-                $view->with('enable_auth_admin_controls', true);
-            }
-        });
 
         $this->app['view']->addNamespace('SupportedApps', app_path('SupportedApps'));
 
@@ -209,6 +160,69 @@ class AppServiceProvider extends ServiceProvider
             $this->app->runningUnitTests()
             || $this->app->runningConsoleCommand('test')
         );
+    }
+
+    protected function registerGlobalViewState(bool $isTestEnvironment): void
+    {
+        view()->composer('*', function ($view) use ($isTestEnvironment) {
+            if ($isTestEnvironment) {
+                $view->with('alt_bg', '');
+                $view->with('trianglify', 'false');
+                $view->with('trianglify_seed', null);
+                $view->with('allusers', collect());
+                $view->with('current_user', new User([
+                    'id' => 0,
+                    'username' => 'test',
+                    'avatar' => null,
+                ]));
+                $view->with('enable_auth_admin_controls', true);
+
+                return;
+            }
+
+            if (isset($_SERVER['HTTP_AUTHORIZATION']) && ! empty($_SERVER['HTTP_AUTHORIZATION'])) {
+                list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) =
+                explode(':', base64_decode(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
+            }
+            if (! \Auth::check()) {
+                if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])
+                        && ! empty($_SERVER['PHP_AUTH_USER']) && ! empty($_SERVER['PHP_AUTH_PW'])) {
+                    $credentials = ['username' => $_SERVER['PHP_AUTH_USER'], 'password' => $_SERVER['PHP_AUTH_PW']];
+
+                    if (\Auth::attempt($credentials, true)) {
+                        $user = \Auth::user();
+                        session(['current_user' => $user]);
+                    }
+                } elseif (isset($_SERVER['REMOTE_USER']) && ! empty($_SERVER['REMOTE_USER'])) {
+                    $user = User::where('username', $_SERVER['REMOTE_USER'])->first();
+                    if ($user) {
+                        \Auth::login($user, true);
+                        session(['current_user' => $user]);
+                    }
+                }
+            }
+
+            $alt_bg = '';
+            $trianglify = 'false';
+            $trianglify_seed = null;
+            if (Setting::fetch('trianglify')) {
+                $trianglify = 'true';
+                $trianglify_seed = Setting::fetch('trianglify_seed');
+            } elseif ($bg_image = Setting::fetch('background_image')) {
+                $alt_bg = ' style="background-image: url(storage/'.$bg_image.')"';
+            }
+
+            $view->with('alt_bg', $alt_bg);
+            $view->with('trianglify', $trianglify);
+            $view->with('trianglify_seed', $trianglify_seed);
+            $view->with('allusers', User::all());
+            $view->with('current_user', User::currentUser());
+            if (config('app.auth_roles_enable')) {
+                $view->with('enable_auth_admin_controls', in_array(config('app.auth_roles_admin'), explode(config('app.auth_roles_delimiter'), $_SERVER[config('app.auth_roles_http_header')])));
+            } else {
+                $view->with('enable_auth_admin_controls', true);
+            }
+        });
     }
 
     private function updateApps(): void

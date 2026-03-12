@@ -92,3 +92,21 @@ test("clicking the mini button posts to the FileFlows toggle endpoint without op
   assert.equal(button.dataset.toggleAction, "resume");
   assert.match(button.innerHTML, /fileflows-toggle-icon-pause/);
 });
+
+test("marks the button unavailable when fileflows state cannot be loaded", () => {
+  bootstrapTile();
+  const controls = initFileFlowsTileControls({ document });
+  const container = document.querySelector(".livestats-container");
+
+  controls.updateTileState(container, {
+    processingState: "unavailable",
+    toggleAction: null,
+  });
+
+  const button = document.querySelector(".fileflows-processing-toggle");
+
+  assert.equal(button.dataset.processingState, "unavailable");
+  assert.equal(button.disabled, true);
+  assert.equal(button.getAttribute("aria-label"), "FileFlows unavailable");
+  assert.match(button.innerHTML, /fileflows-toggle-icon-unavailable/);
+});

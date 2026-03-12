@@ -17,6 +17,10 @@
   let bound = false;
 
   function getButtonIcon(processingState) {
+    if (processingState === "unavailable") {
+      return "unavailable";
+    }
+
     return processingState === "paused" ? "pause" : "play";
   }
 
@@ -31,6 +35,14 @@
       `;
     }
 
+    if (icon === "unavailable") {
+      return `
+        <svg class="fileflows-toggle-icon fileflows-toggle-icon-unavailable" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-2h2zm0-4h-2V7h2z"></path>
+        </svg>
+      `;
+    }
+
     return `
       <svg class="fileflows-toggle-icon fileflows-toggle-icon-pause" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <rect x="7" y="6" width="4" height="12" rx="1"></rect>
@@ -40,6 +52,10 @@
   }
 
   function getButtonLabel(toggleAction) {
+    if (toggleAction === null) {
+      return "FileFlows unavailable";
+    }
+
     return toggleAction === "resume" ? "Resume FileFlows" : "Pause FileFlows";
   }
 
@@ -56,17 +72,29 @@
   function updateTileState(element, state = {}) {
     const button = getButtonForElement(element);
 
-    if (!button || !state.processingState || !state.toggleAction) {
+    if (
+      !button ||
+      !state.processingState ||
+      (state.processingState !== "unavailable" && !state.toggleAction)
+    ) {
       return null;
     }
 
     button.dataset.processingState = state.processingState;
-    button.dataset.toggleAction = state.toggleAction;
+    if (state.toggleAction) {
+      button.dataset.toggleAction = state.toggleAction;
+    } else {
+      delete button.dataset.toggleAction;
+    }
     button.setAttribute("aria-label", getButtonLabel(state.toggleAction));
     button.setAttribute("title", getButtonLabel(state.toggleAction));
     button.classList.toggle("is-paused", state.processingState === "paused");
     button.classList.toggle("is-running", state.processingState === "running");
-    button.disabled = false;
+    button.classList.toggle(
+      "is-unavailable",
+      state.processingState === "unavailable"
+    );
+    button.disabled = state.processingState === "unavailable";
     button.innerHTML = getButtonMarkup(state.processingState).trim();
 
     return button;

@@ -4186,7 +4186,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
   }
   function getButtonMarkup(processingState, isBusy) {
     var icon = getButtonIcon(processingState);
-    var spinnerMarkup = isBusy && icon !== "unavailable" ? "\n        <svg class=\"fileflows-toggle-queue-spinner\" viewBox=\"0 0 56 56\" aria-hidden=\"true\" focusable=\"false\">\n          <circle cx=\"28\" cy=\"28\" r=\"22\"></circle>\n        </svg>\n      " : "";
+    var spinnerMarkup = isBusy && icon !== "unavailable" ? "\n        <span class=\"fileflows-toggle-loading fileflows-toggle-loading-ring\" aria-hidden=\"true\"></span>\n      " : "";
     var iconMarkup = "";
     if (icon === "play") {
       iconMarkup = "\n        <svg class=\"fileflows-toggle-icon fileflows-toggle-icon-play\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">\n          <path d=\"M8 6.5v11l9-5.5-9-5.5z\"></path>\n        </svg>\n      ";

@@ -29,9 +29,7 @@
     const spinnerMarkup =
       isBusy && icon !== "unavailable"
         ? `
-        <svg class="fileflows-toggle-queue-spinner" viewBox="0 0 56 56" aria-hidden="true" focusable="false">
-          <circle cx="28" cy="28" r="22"></circle>
-        </svg>
+        <span class="fileflows-toggle-loading fileflows-toggle-loading-ring" aria-hidden="true"></span>
       `
         : "";
     let iconMarkup = "";

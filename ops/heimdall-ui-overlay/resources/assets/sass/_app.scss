@@ -49,23 +49,15 @@ body {
 	align-items: center;
 	justify-content: center;
 }
-.fileflows-toggle-queue-spinner {
+.fileflows-toggle-loading-ring {
 	position: absolute;
 	inset: 0;
 	width: 58px;
 	height: 58px;
-	display: block;
-	color: rgba(255, 255, 255, 0.92);
-	animation: fileflows-toggle-spin 1.2s linear infinite;
+	border-width: 3px;
+	border-color: rgba(255, 255, 255, 0.28);
+	border-top-color: #ffffff;
 	filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
-}
-.fileflows-toggle-queue-spinner circle {
-	fill: none;
-	stroke: currentColor;
-	stroke-width: 3;
-	stroke-linecap: round;
-	stroke-dasharray: 48 96;
-	opacity: 0.9;
 }
 .fileflows-toggle-loading {
 	width: 32px;

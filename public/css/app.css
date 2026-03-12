@@ -313,8 +313,6 @@ body {
 }
 
 .fileflows-toggle-loading {
-  width: 32px;
-  height: 32px;
   display: block;
   border: 2px solid rgba(255, 255, 255, 0.35);
   border-top-color: #ffffff;

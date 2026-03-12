@@ -28,7 +28,9 @@
                                     aria-label="Loading FileFlows state"
                                     title="Loading FileFlows state"
                                 >
-                                    <span class="fileflows-toggle-loading" aria-hidden="true"></span>
+                                    <span class="fileflows-toggle-visual">
+                                        <span class="fileflows-toggle-loading fileflows-toggle-loading-ring" aria-hidden="true"></span>
+                                    </span>
                                 </button>
                                 @endif
                             </div>

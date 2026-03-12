@@ -4184,15 +4184,18 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     }
     return processingState === "paused" ? "pause" : "play";
   }
-  function getButtonMarkup(processingState) {
+  function getButtonMarkup(processingState, isBusy) {
     var icon = getButtonIcon(processingState);
+    var spinnerMarkup = isBusy && icon !== "unavailable" ? "\n        <svg class=\"fileflows-toggle-queue-spinner\" viewBox=\"0 0 56 56\" aria-hidden=\"true\" focusable=\"false\">\n          <circle cx=\"28\" cy=\"28\" r=\"22\"></circle>\n        </svg>\n      " : "";
+    var iconMarkup = "";
     if (icon === "play") {
-      return "\n        <svg class=\"fileflows-toggle-icon fileflows-toggle-icon-play\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">\n          <path d=\"M8 6.5v11l9-5.5-9-5.5z\"></path>\n        </svg>\n      ";
+      iconMarkup = "\n        <svg class=\"fileflows-toggle-icon fileflows-toggle-icon-play\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">\n          <path d=\"M8 6.5v11l9-5.5-9-5.5z\"></path>\n        </svg>\n      ";
+    } else if (icon === "unavailable") {
+      iconMarkup = "\n        <svg class=\"fileflows-toggle-icon fileflows-toggle-icon-unavailable\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">\n          <path d=\"M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-2h2zm0-4h-2V7h2z\"></path>\n        </svg>\n      ";
+    } else {
+      iconMarkup = "\n      <svg class=\"fileflows-toggle-icon fileflows-toggle-icon-pause\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">\n        <rect x=\"7\" y=\"6\" width=\"4\" height=\"12\" rx=\"1\"></rect>\n        <rect x=\"13\" y=\"6\" width=\"4\" height=\"12\" rx=\"1\"></rect>\n      </svg>\n    ";
     }
-    if (icon === "unavailable") {
-      return "\n        <svg class=\"fileflows-toggle-icon fileflows-toggle-icon-unavailable\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">\n          <path d=\"M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-2h2zm0-4h-2V7h2z\"></path>\n        </svg>\n      ";
-    }
-    return "\n      <svg class=\"fileflows-toggle-icon fileflows-toggle-icon-pause\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">\n        <rect x=\"7\" y=\"6\" width=\"4\" height=\"12\" rx=\"1\"></rect>\n        <rect x=\"13\" y=\"6\" width=\"4\" height=\"12\" rx=\"1\"></rect>\n      </svg>\n    ";
+    return "\n      <span class=\"fileflows-toggle-visual\">\n        ".concat(spinnerMarkup, "\n        ").concat(iconMarkup, "\n      </span>\n    ");
   }
   function getButtonLabel(toggleAction) {
     if (toggleAction === null) {
@@ -4210,6 +4213,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
   function updateTileState(element) {
     var state = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
     var button = getButtonForElement(element);
+    var isBusy = state.isBusy === true;
     if (!button || !state.processingState || state.processingState !== "unavailable" && !state.toggleAction) {
       return null;
     }
@@ -4219,13 +4223,15 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     } else {
       delete button.dataset.toggleAction;
     }
+    button.dataset.busy = isBusy ? "true" : "false";
     button.setAttribute("aria-label", getButtonLabel(state.toggleAction));
     button.setAttribute("title", getButtonLabel(state.toggleAction));
     button.classList.toggle("is-paused", state.processingState === "paused");
     button.classList.toggle("is-running", state.processingState === "running");
+    button.classList.toggle("is-busy", isBusy);
     button.classList.toggle("is-unavailable", state.processingState === "unavailable");
     button.disabled = state.processingState === "unavailable";
-    button.innerHTML = getButtonMarkup(state.processingState).trim();
+    button.innerHTML = getButtonMarkup(state.processingState, isBusy).trim();
     return button;
   }
   function handleToggleClick(_x) {

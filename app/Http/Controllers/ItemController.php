@@ -668,6 +668,7 @@ class ItemController extends Controller
         $processed = (int) ($statusDetails['processed'] ?? 0);
         $time = (string) ($statusDetails['time'] ?? '');
         $isPaused = (bool) ($settings['IsPaused'] ?? false);
+        $isBusy = ! $isPaused && ($queue > 0 || $processing > 0 || $time !== '');
 
         $data = [
             'queue' => $queue,
@@ -690,6 +691,7 @@ class ItemController extends Controller
             'queue' => $queue,
             'processingState' => $isPaused ? 'paused' : 'running',
             'toggleAction' => $isPaused ? 'resume' : 'pause',
+            'isBusy' => $isBusy,
             'pausedUntil' => $settings['PausedUntil'] ?? null,
         ];
     }
@@ -708,6 +710,7 @@ class ItemController extends Controller
             'queue' => 0,
             'processingState' => 'unavailable',
             'toggleAction' => null,
+            'isBusy' => false,
             'pausedUntil' => null,
         ];
     }

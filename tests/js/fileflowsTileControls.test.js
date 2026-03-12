@@ -46,6 +46,8 @@ test("updates the fileflows button to pause when the backend reports running", (
   controls.updateTileState(container, {
     processingState: "running",
     toggleAction: "pause",
+    queue: 0,
+    isBusy: false,
   });
 
   const button = document.querySelector(".fileflows-processing-toggle");
@@ -55,6 +57,26 @@ test("updates the fileflows button to pause when the backend reports running", (
   assert.match(button.getAttribute("aria-label"), /Pause/i);
   assert.match(button.innerHTML, /fileflows-toggle-icon/);
   assert.match(button.innerHTML, /fileflows-toggle-icon-play/);
+  assert.doesNotMatch(button.innerHTML, /fileflows-toggle-queue-spinner/);
+});
+
+test("shows a spinner ring around the fileflows icon while work is running", () => {
+  bootstrapTile();
+  const controls = initFileFlowsTileControls({ document });
+  const container = document.querySelector(".livestats-container");
+
+  controls.updateTileState(container, {
+    processingState: "running",
+    toggleAction: "pause",
+    queue: 0,
+    isBusy: true,
+  });
+
+  const button = document.querySelector(".fileflows-processing-toggle");
+
+  assert.equal(button.dataset.processingState, "running");
+  assert.equal(button.dataset.busy, "true");
+  assert.match(button.innerHTML, /fileflows-toggle-queue-spinner/);
 });
 
 test("clicking the mini button posts to the FileFlows toggle endpoint without opening the tile", async () => {
@@ -68,6 +90,8 @@ test("clicking the mini button posts to the FileFlows toggle endpoint without op
       json: async () => ({
         processingState: "paused",
         toggleAction: "resume",
+        queue: 0,
+        isBusy: false,
       }),
     };
   };
@@ -101,6 +125,8 @@ test("marks the button unavailable when fileflows state cannot be loaded", () =>
   controls.updateTileState(container, {
     processingState: "unavailable",
     toggleAction: null,
+    queue: 0,
+    isBusy: false,
   });
 
   const button = document.querySelector(".fileflows-processing-toggle");

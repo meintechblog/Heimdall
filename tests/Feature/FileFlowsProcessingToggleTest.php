@@ -36,6 +36,7 @@ class FileFlowsProcessingToggleTest extends TestCase
         $response->assertJsonPath('processingState', 'running');
         $response->assertJsonPath('toggleAction', 'pause');
         $response->assertJsonPath('queue', 4);
+        $response->assertJsonPath('isBusy', true);
         $response->assertJsonPath('html', fn ($html) => is_string($html) && str_contains($html, 'Queue'));
     }
 
@@ -57,6 +58,7 @@ class FileFlowsProcessingToggleTest extends TestCase
         $response->assertJsonPath('processingState', 'unavailable');
         $response->assertJsonPath('toggleAction', null);
         $response->assertJsonPath('queue', 0);
+        $response->assertJsonPath('isBusy', false);
         $response->assertJsonPath('html', fn ($html) => is_string($html) && str_contains($html, 'Unavailable'));
     }
 
@@ -94,6 +96,7 @@ class FileFlowsProcessingToggleTest extends TestCase
         $response->assertJsonPath('processingState', 'running');
         $response->assertJsonPath('toggleAction', 'pause');
         $response->assertJsonPath('pausedUntil', '0001-01-01T00:00:00');
+        $response->assertJsonPath('isBusy', false);
 
         Http::assertSent(fn ($request) => $request->url() === 'http://fileflows.local/api/system/pause?duration=0');
     }
@@ -140,6 +143,7 @@ class FileFlowsProcessingToggleTest extends TestCase
         $response->assertJsonPath('processingState', 'paused');
         $response->assertJsonPath('toggleAction', 'resume');
         $response->assertJsonPath('pausedUntil', '2099-12-31T23:59:59Z');
+        $response->assertJsonPath('isBusy', false);
 
         Http::assertSent(fn ($request) => $request->url() === 'http://fileflows.local/api/system/pause?duration=52560000');
     }

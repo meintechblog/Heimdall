@@ -24,30 +24,44 @@
     return processingState === "paused" ? "pause" : "play";
   }
 
-  function getButtonMarkup(processingState) {
+  function getButtonMarkup(processingState, isBusy) {
     const icon = getButtonIcon(processingState);
+    const spinnerMarkup =
+      isBusy && icon !== "unavailable"
+        ? `
+        <svg class="fileflows-toggle-queue-spinner" viewBox="0 0 56 56" aria-hidden="true" focusable="false">
+          <circle cx="28" cy="28" r="22"></circle>
+        </svg>
+      `
+        : "";
+    let iconMarkup = "";
 
     if (icon === "play") {
-      return `
+      iconMarkup = `
         <svg class="fileflows-toggle-icon fileflows-toggle-icon-play" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M8 6.5v11l9-5.5-9-5.5z"></path>
         </svg>
       `;
-    }
-
-    if (icon === "unavailable") {
-      return `
+    } else if (icon === "unavailable") {
+      iconMarkup = `
         <svg class="fileflows-toggle-icon fileflows-toggle-icon-unavailable" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-2h2zm0-4h-2V7h2z"></path>
         </svg>
       `;
-    }
-
-    return `
+    } else {
+      iconMarkup = `
       <svg class="fileflows-toggle-icon fileflows-toggle-icon-pause" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <rect x="7" y="6" width="4" height="12" rx="1"></rect>
         <rect x="13" y="6" width="4" height="12" rx="1"></rect>
       </svg>
+    `;
+    }
+
+    return `
+      <span class="fileflows-toggle-visual">
+        ${spinnerMarkup}
+        ${iconMarkup}
+      </span>
     `;
   }
 
@@ -71,6 +85,7 @@
 
   function updateTileState(element, state = {}) {
     const button = getButtonForElement(element);
+    const isBusy = state.isBusy === true;
 
     if (
       !button ||
@@ -86,16 +101,18 @@
     } else {
       delete button.dataset.toggleAction;
     }
+    button.dataset.busy = isBusy ? "true" : "false";
     button.setAttribute("aria-label", getButtonLabel(state.toggleAction));
     button.setAttribute("title", getButtonLabel(state.toggleAction));
     button.classList.toggle("is-paused", state.processingState === "paused");
     button.classList.toggle("is-running", state.processingState === "running");
+    button.classList.toggle("is-busy", isBusy);
     button.classList.toggle(
       "is-unavailable",
       state.processingState === "unavailable"
     );
     button.disabled = state.processingState === "unavailable";
-    button.innerHTML = getButtonMarkup(state.processingState).trim();
+    button.innerHTML = getButtonMarkup(state.processingState, isBusy).trim();
 
     return button;
   }

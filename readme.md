@@ -60,6 +60,8 @@ For the Hulki custom fork, use the repo-managed replay workflow in `docs/UPDATIN
 
 For the short day-to-day command list, use `MAINTENANCE.md`.
 
+For Codex-specific reusable project skills, see `docs/CODEX_SKILLS.md`.
+
 ### Hulki custom features
 This fork also carries a small FileFlows dashboard extension for the two live FileFlows tiles:
 

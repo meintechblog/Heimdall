@@ -57,3 +57,4 @@ curl -I http://192.168.3.12:5000/
 
 - allgemeiner Projektüberblick: `readme.md`
 - Update-/Replay-Details: `docs/UPDATING_HULKI_FORK.md`
+- Codex-Projektskills: `docs/CODEX_SKILLS.md`

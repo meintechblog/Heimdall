@@ -4762,6 +4762,34 @@ function createQueue() {
 function getContainers() {
   return document.querySelectorAll(CONTAINER_SELECTOR);
 }
+function getIconLoadingIndicator(container) {
+  var itemContainer = container && typeof container.closest === "function" ? container.closest(".item-container") : null;
+  if (!itemContainer) {
+    return null;
+  }
+  return itemContainer.querySelector(".venus-icon-loading");
+}
+function primeIconLoadingIndicator(container) {
+  var indicator = getIconLoadingIndicator(container);
+  if (!indicator) {
+    return;
+  }
+  container.setAttribute("data-loading-state", "loading");
+  indicator.classList.remove("is-hidden");
+}
+function completeIconLoadingIndicator(container) {
+  var failed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+  var indicator = getIconLoadingIndicator(container);
+  if (!indicator) {
+    return;
+  }
+  container.setAttribute("data-loading-state", failed ? "failed" : "complete");
+  indicator.classList.add("is-hidden");
+  if (failed) {
+    // eslint-disable-next-line no-param-reassign
+    container.innerHTML = "";
+  }
+}
 
 /**
  *
@@ -4911,6 +4939,7 @@ function createUpdateJob(container, scheduleUpdate, visibilityTracker) {
     }).then(function (data) {
       // eslint-disable-next-line no-param-reassign
       container.innerHTML = data.html;
+      completeIconLoadingIndicator(container);
       if (fileFlowsTileControls && data.processingState) {
         fileFlowsTileControls.updateTileState(container, data);
       }
@@ -4921,6 +4950,9 @@ function createUpdateJob(container, scheduleUpdate, visibilityTracker) {
     })["catch"](function (error) {
       // eslint-disable-next-line no-console
       console.error(error);
+      if (container.getAttribute("data-loading-state") === "loading") {
+        completeIconLoadingIndicator(container, true);
+      }
       if (scheduleUpdate) {
         scheduleUpdate(container, REFRESH_INTERVAL_BIG);
       }
@@ -4932,6 +4964,9 @@ if ((typeof module === "undefined" ? "undefined" : _typeof(module)) === "object"
     createActivityTracker: createActivityTracker,
     createVisibilityTracker: createVisibilityTracker,
     getInitialRequestDelay: getInitialRequestDelay,
+    getIconLoadingIndicator: getIconLoadingIndicator,
+    primeIconLoadingIndicator: primeIconLoadingIndicator,
+    completeIconLoadingIndicator: completeIconLoadingIndicator,
     queueInitialUpdates: queueInitialUpdates,
     scheduleVisibleContainers: scheduleVisibleContainers
   };
@@ -4939,6 +4974,9 @@ if ((typeof module === "undefined" ? "undefined" : _typeof(module)) === "object"
 if (typeof document !== "undefined") {
   var livestatContainers = getContainers();
   if (livestatContainers.length > 0) {
+    Array.from(livestatContainers).forEach(function (container) {
+      primeIconLoadingIndicator(container);
+    });
     var myQueue = createQueue();
     var activityTracker = createActivityTracker(document);
     var visibilityTracker = createVisibilityTracker(livestatContainers);

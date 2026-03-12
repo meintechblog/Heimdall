@@ -232,6 +232,26 @@ body {
   position: relative;
 }
 
+.venus-icon-loading {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(10, 16, 24, 0.14);
+  pointer-events: none;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
+  z-index: 2;
+}
+
+.venus-icon-loading.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
 .fileflows-processing-toggle {
   position: absolute;
   inset: 0;

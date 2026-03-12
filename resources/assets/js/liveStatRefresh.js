@@ -44,6 +44,46 @@ function getContainers() {
   return document.querySelectorAll(CONTAINER_SELECTOR);
 }
 
+function getIconLoadingIndicator(container) {
+  const itemContainer =
+    container && typeof container.closest === "function"
+      ? container.closest(".item-container")
+      : null;
+
+  if (!itemContainer) {
+    return null;
+  }
+
+  return itemContainer.querySelector(".venus-icon-loading");
+}
+
+function primeIconLoadingIndicator(container) {
+  const indicator = getIconLoadingIndicator(container);
+
+  if (!indicator) {
+    return;
+  }
+
+  container.setAttribute("data-loading-state", "loading");
+  indicator.classList.remove("is-hidden");
+}
+
+function completeIconLoadingIndicator(container, failed = false) {
+  const indicator = getIconLoadingIndicator(container);
+
+  if (!indicator) {
+    return;
+  }
+
+  container.setAttribute("data-loading-state", failed ? "failed" : "complete");
+  indicator.classList.add("is-hidden");
+
+  if (failed) {
+    // eslint-disable-next-line no-param-reassign
+    container.innerHTML = "";
+  }
+}
+
 /**
  *
  * @param {boolean} dataOnly
@@ -232,6 +272,7 @@ function createUpdateJob(container, scheduleUpdate, visibilityTracker) {
       .then((data) => {
         // eslint-disable-next-line no-param-reassign
         container.innerHTML = data.html;
+        completeIconLoadingIndicator(container);
 
         if (fileFlowsTileControls && data.processingState) {
           fileFlowsTileControls.updateTileState(container, data);
@@ -246,6 +287,9 @@ function createUpdateJob(container, scheduleUpdate, visibilityTracker) {
       .catch((error) => {
         // eslint-disable-next-line no-console
         console.error(error);
+        if (container.getAttribute("data-loading-state") === "loading") {
+          completeIconLoadingIndicator(container, true);
+        }
         if (scheduleUpdate) {
           scheduleUpdate(container, REFRESH_INTERVAL_BIG);
         }
@@ -258,6 +302,9 @@ if (typeof module === "object" && module.exports) {
     createActivityTracker,
     createVisibilityTracker,
     getInitialRequestDelay,
+    getIconLoadingIndicator,
+    primeIconLoadingIndicator,
+    completeIconLoadingIndicator,
     queueInitialUpdates,
     scheduleVisibleContainers,
   };
@@ -267,6 +314,10 @@ if (typeof document !== "undefined") {
   const livestatContainers = getContainers();
 
   if (livestatContainers.length > 0) {
+    Array.from(livestatContainers).forEach((container) => {
+      primeIconLoadingIndicator(container);
+    });
+
     const myQueue = createQueue();
     const activityTracker = createActivityTracker(document);
     const visibilityTracker = createVisibilityTracker(livestatContainers);

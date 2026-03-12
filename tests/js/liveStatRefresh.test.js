@@ -4,6 +4,9 @@ const assert = require("node:assert/strict");
 const {
   createActivityTracker,
   createVisibilityTracker,
+  getIconLoadingIndicator,
+  primeIconLoadingIndicator,
+  completeIconLoadingIndicator,
   scheduleVisibleContainers,
   getInitialRequestDelay,
   queueInitialUpdates,
@@ -120,4 +123,48 @@ test("only schedules visible containers while the tab is active", () => {
   );
 
   assert.deepEqual(scheduled, ["visible"]);
+});
+
+test("primes and hides the icon loading indicator for venus tiles", () => {
+  const indicator = {
+    classList: {
+      removed: [],
+      added: [],
+      remove(value) {
+        this.removed.push(value);
+      },
+      add(value) {
+        this.added.push(value);
+      },
+    },
+  };
+  const attributes = new Map();
+  const itemContainer = {
+    querySelector(selector) {
+      return selector === ".venus-icon-loading" ? indicator : null;
+    },
+  };
+  const container = {
+    innerHTML: "<ul><li>old</li></ul>",
+    closest(selector) {
+      return selector === ".item-container" ? itemContainer : null;
+    },
+    setAttribute(name, value) {
+      attributes.set(name, value);
+    },
+    getAttribute(name) {
+      return attributes.get(name);
+    },
+  };
+
+  assert.equal(getIconLoadingIndicator(container), indicator);
+
+  primeIconLoadingIndicator(container);
+  assert.equal(attributes.get("data-loading-state"), "loading");
+  assert.deepEqual(indicator.classList.removed, ["is-hidden"]);
+
+  completeIconLoadingIndicator(container, true);
+  assert.equal(attributes.get("data-loading-state"), "failed");
+  assert.equal(container.innerHTML, "");
+  assert.deepEqual(indicator.classList.added, ["is-hidden"]);
 });

@@ -112,6 +112,14 @@ $.when($.ready).then(() => {
     });
   }
 
+  if (typeof window.initHeimdallDiscoveryPanel === "function") {
+    window.initHeimdallDiscoveryPanel({
+      document,
+      window,
+      fetch: window.fetch.bind(window),
+    });
+  }
+
   $("#app")
     .on("click", "#config-button", (e) => {
       e.preventDefault();

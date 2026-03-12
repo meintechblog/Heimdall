@@ -4165,6 +4165,268 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     updateTagButtonCounts: updateTagButtonCounts
   };
 });
+function renderCandidateMarkup(candidate) {
+  var subtitle = [candidate.host, candidate.subtitle].filter(Boolean).join(" · ");
+  return "\n    <button\n      type=\"button\"\n      class=\"discovery-candidate\"\n      data-candidate-id=\"".concat(candidate.id, "\"\n      data-source=\"").concat(candidate.source, "\"\n      aria-label=\"").concat(candidate.title, " hinzufuegen\"\n    >\n      <span class=\"discovery-candidate-card\">\n        <span class=\"app-icon-container\">\n          <img class=\"app-icon\" src=\"").concat(candidate.iconUrl, "\" alt=\"").concat(candidate.sourceLabel, "\" />\n          <span class=\"tile-icon-loading-overlay is-hidden\" aria-hidden=\"true\">\n            <span class=\"tile-icon-loading-visual\">\n              <span class=\"tile-icon-loading-spinner tile-icon-loading-spinner-ring\" aria-hidden=\"true\"></span>\n            </span>\n          </span>\n        </span>\n        <span class=\"discovery-candidate-details\">\n          <span class=\"discovery-candidate-source\">").concat(candidate.sourceLabel, "</span>\n          <span class=\"discovery-candidate-title\">").concat(candidate.title, "</span>\n          <span class=\"discovery-candidate-meta\">").concat(subtitle, "</span>\n        </span>\n        <span class=\"discovery-candidate-action\">Hinzufuegen</span>\n      </span>\n    </button>\n  ");
+}
+function initHeimdallDiscoveryPanel() {
+  var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  var doc = options.document || (typeof document !== "undefined" ? document : null);
+  var win = options.window || (typeof window !== "undefined" ? window : null);
+  var fetchImpl = options.fetch || (win && typeof win.fetch === "function" ? win.fetch.bind(win) : null);
+  var scheduleInterval = options.scheduleInterval || (win && typeof win.setInterval === "function" ? win.setInterval.bind(win) : null);
+  var autoStart = options.autoStart !== false;
+  if (!doc || !fetchImpl) {
+    return null;
+  }
+  var hub = doc.getElementById("discovery-hub");
+  if (!hub) {
+    return null;
+  }
+  var summaryUrl = hub.getAttribute("data-summary-url");
+  var candidatesUrl = hub.getAttribute("data-candidates-url");
+  var addUrl = hub.getAttribute("data-add-url");
+  var refreshSeconds = Number(hub.getAttribute("data-refresh-seconds") || 300);
+  var toggle = hub.querySelector("#discovery-toggle");
+  var countLabel = hub.querySelector('[data-role="count"]');
+  var iconLabel = hub.querySelector('[data-role="icon"]');
+  var panel = hub.querySelector('[data-role="panel"]');
+  var state = hub.querySelector('[data-role="state"]');
+  var candidatesContainer = hub.querySelector('[data-role="candidates"]');
+  function setState() {
+    var message = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "";
+    var hidden = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+    state.textContent = message;
+    state.classList.toggle("is-hidden", hidden || message === "");
+  }
+  function setExpanded(expanded) {
+    toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+    iconLabel.textContent = expanded ? "-" : "+";
+    panel.classList.toggle("is-hidden", !expanded);
+  }
+  function setCount(totalCount) {
+    if (totalCount > 0) {
+      toggle.classList.remove("is-hidden");
+      countLabel.textContent = String(totalCount);
+      return;
+    }
+    toggle.classList.add("is-hidden");
+    countLabel.textContent = "";
+    candidatesContainer.innerHTML = "";
+    setExpanded(false);
+    setState("", true);
+  }
+  function refreshSummary() {
+    return _refreshSummary.apply(this, arguments);
+  }
+  function _refreshSummary() {
+    _refreshSummary = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+      var response, payload;
+      return _regenerator().w(function (_context2) {
+        while (1) switch (_context2.n) {
+          case 0:
+            _context2.n = 1;
+            return fetchImpl(summaryUrl, {
+              headers: {
+                "X-Requested-With": "XMLHttpRequest"
+              }
+            });
+          case 1:
+            response = _context2.v;
+            if (response.ok) {
+              _context2.n = 2;
+              break;
+            }
+            throw new Error("Failed to refresh discovery summary: ".concat(response.status));
+          case 2:
+            _context2.n = 3;
+            return response.json();
+          case 3:
+            payload = _context2.v;
+            setCount(Number(payload.totalCount || 0));
+            return _context2.a(2, payload);
+        }
+      }, _callee2);
+    }));
+    return _refreshSummary.apply(this, arguments);
+  }
+  function loadCandidates() {
+    return _loadCandidates.apply(this, arguments);
+  }
+  function _loadCandidates() {
+    _loadCandidates = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+      var response, payload, candidates;
+      return _regenerator().w(function (_context3) {
+        while (1) switch (_context3.n) {
+          case 0:
+            setState("Suche nach neuen WLED-Geraeten ...");
+            _context3.n = 1;
+            return fetchImpl(candidatesUrl, {
+              headers: {
+                "X-Requested-With": "XMLHttpRequest"
+              }
+            });
+          case 1:
+            response = _context3.v;
+            if (response.ok) {
+              _context3.n = 2;
+              break;
+            }
+            throw new Error("Failed to load candidates: ".concat(response.status));
+          case 2:
+            _context3.n = 3;
+            return response.json();
+          case 3:
+            payload = _context3.v;
+            candidates = Array.isArray(payload.candidates) ? payload.candidates : [];
+            candidatesContainer.innerHTML = candidates.map(renderCandidateMarkup).join("");
+            setCount(Number(payload.totalCount || candidates.length));
+            if (candidates.length > 0) {
+              setState("", true);
+            } else {
+              setState("Keine neuen Services verfuegbar.");
+            }
+            return _context3.a(2, payload);
+        }
+      }, _callee3);
+    }));
+    return _loadCandidates.apply(this, arguments);
+  }
+  function addCandidate(_x) {
+    return _addCandidate.apply(this, arguments);
+  }
+  function _addCandidate() {
+    _addCandidate = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4(button) {
+      var candidateButton, overlay, response, _t3;
+      return _regenerator().w(function (_context4) {
+        while (1) switch (_context4.p = _context4.n) {
+          case 0:
+            candidateButton = button;
+            if (!candidateButton.disabled) {
+              _context4.n = 1;
+              break;
+            }
+            return _context4.a(2);
+          case 1:
+            candidateButton.disabled = true;
+            candidateButton.classList.add("is-adding");
+            overlay = candidateButton.querySelector(".tile-icon-loading-overlay");
+            if (overlay) {
+              overlay.classList.remove("is-hidden");
+            }
+            _context4.p = 2;
+            _context4.n = 3;
+            return fetchImpl(addUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest"
+              },
+              body: JSON.stringify({
+                source: candidateButton.getAttribute("data-source"),
+                candidateId: candidateButton.getAttribute("data-candidate-id")
+              })
+            });
+          case 3:
+            response = _context4.v;
+            if (response.ok) {
+              _context4.n = 4;
+              break;
+            }
+            throw new Error("Failed to add candidate: ".concat(response.status));
+          case 4:
+            _context4.n = 5;
+            return response.json();
+          case 5:
+            if (win && win.location && typeof win.location.reload === "function") {
+              win.location.reload();
+            }
+            _context4.n = 7;
+            break;
+          case 6:
+            _context4.p = 6;
+            _t3 = _context4.v;
+            setState("Der Eintrag konnte gerade nicht uebernommen werden.");
+            candidateButton.disabled = false;
+            candidateButton.classList.remove("is-adding");
+            if (overlay) {
+              overlay.classList.add("is-hidden");
+            }
+            throw _t3;
+          case 7:
+            return _context4.a(2);
+        }
+      }, _callee4, null, [[2, 6]]);
+    }));
+    return _addCandidate.apply(this, arguments);
+  }
+  toggle.addEventListener("click", /*#__PURE__*/function () {
+    var _ref = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(event) {
+      return _regenerator().w(function (_context) {
+        while (1) switch (_context.n) {
+          case 0:
+            event.preventDefault();
+            if (!toggle.classList.contains("is-hidden")) {
+              _context.n = 1;
+              break;
+            }
+            return _context.a(2);
+          case 1:
+            if (!(toggle.getAttribute("aria-expanded") === "true")) {
+              _context.n = 2;
+              break;
+            }
+            setExpanded(false);
+            return _context.a(2);
+          case 2:
+            setExpanded(true);
+            _context.n = 3;
+            return loadCandidates();
+          case 3:
+            return _context.a(2);
+        }
+      }, _callee);
+    }));
+    return function (_x2) {
+      return _ref.apply(this, arguments);
+    };
+  }());
+  hub.addEventListener("click", function (event) {
+    var button = event.target.closest(".discovery-candidate");
+    if (!button) {
+      return;
+    }
+    event.preventDefault();
+    addCandidate(button)["catch"](function () {});
+  });
+  doc.addEventListener("visibilitychange", function () {
+    if (doc.hidden !== true) {
+      refreshSummary()["catch"](function () {});
+    }
+  });
+  if (scheduleInterval && refreshSeconds > 0) {
+    scheduleInterval(function () {
+      if (doc.hidden === true) {
+        return;
+      }
+      refreshSummary()["catch"](function () {});
+    }, refreshSeconds * 1000);
+  }
+  if (autoStart) {
+    refreshSummary()["catch"](function () {});
+  }
+  return {
+    refreshSummary: refreshSummary,
+    loadCandidates: loadCandidates,
+    setExpanded: setExpanded
+  };
+}
+if (typeof window !== "undefined") {
+  window.initHeimdallDiscoveryPanel = initHeimdallDiscoveryPanel;
+}
+if ((typeof module === "undefined" ? "undefined" : _typeof(module)) === "object" && module.exports) {
+  module.exports = initHeimdallDiscoveryPanel;
+}
 (function registerFileFlowsTileControls(root, factory) {
   if ((typeof module === "undefined" ? "undefined" : _typeof(module)) === "object" && module.exports) {
     module.exports = factory;
@@ -4234,33 +4496,33 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     button.innerHTML = getButtonMarkup(state.processingState, isBusy).trim();
     return button;
   }
-  function handleToggleClick(_x) {
+  function handleToggleClick(_x3) {
     return _handleToggleClick.apply(this, arguments);
   }
   function _handleToggleClick() {
-    _handleToggleClick = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(event) {
-      var button, response, data, _t3;
-      return _regenerator().w(function (_context) {
-        while (1) switch (_context.p = _context.n) {
+    _handleToggleClick = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5(event) {
+      var button, response, data, _t4;
+      return _regenerator().w(function (_context5) {
+        while (1) switch (_context5.p = _context5.n) {
           case 0:
             button = event.target.closest(".fileflows-processing-toggle");
             if (button) {
-              _context.n = 1;
+              _context5.n = 1;
               break;
             }
-            return _context.a(2);
+            return _context5.a(2);
           case 1:
             event.preventDefault();
             event.stopPropagation();
             if (!(!fetchImpl || button.disabled)) {
-              _context.n = 2;
+              _context5.n = 2;
               break;
             }
-            return _context.a(2);
+            return _context5.a(2);
           case 2:
             button.disabled = true;
-            _context.p = 3;
-            _context.n = 4;
+            _context5.p = 3;
+            _context5.n = 4;
             return fetchImpl(button.dataset.toggleUrl, {
               method: "POST",
               headers: {
@@ -4268,30 +4530,30 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               }
             });
           case 4:
-            response = _context.v;
+            response = _context5.v;
             if (response.ok) {
-              _context.n = 5;
+              _context5.n = 5;
               break;
             }
             throw new Error("Toggle failed: ".concat(response.status));
           case 5:
-            _context.n = 6;
+            _context5.n = 6;
             return response.json();
           case 6:
-            data = _context.v;
+            data = _context5.v;
             updateTileState(button, data);
-            _context.n = 8;
+            _context5.n = 8;
             break;
           case 7:
-            _context.p = 7;
-            _t3 = _context.v;
+            _context5.p = 7;
+            _t4 = _context5.v;
             button.disabled = false;
             // eslint-disable-next-line no-console
-            console.error(_t3);
+            console.error(_t4);
           case 8:
-            return _context.a(2);
+            return _context5.a(2);
         }
-      }, _callee, null, [[3, 7]]);
+      }, _callee5, null, [[3, 7]]);
     }));
     return _handleToggleClick.apply(this, arguments);
   }
@@ -4404,6 +4666,13 @@ $.when($.ready).then(function () {
       window: window,
       document: document,
       storage: window.localStorage
+    });
+  }
+  if (typeof window.initHeimdallDiscoveryPanel === "function") {
+    window.initHeimdallDiscoveryPanel({
+      document: document,
+      window: window,
+      fetch: window.fetch.bind(window)
     });
   }
   $("#app").on("click", "#config-button", function (e) {
@@ -4565,9 +4834,9 @@ var APP_LOAD_URL = "appload";
  * @param {object} item
  * @param {array} errors
  */
-var updateStatus = function updateStatus(_ref) {
-  var item = _ref.item,
-    errors = _ref.errors;
+var updateStatus = function updateStatus(_ref2) {
+  var item = _ref2.item,
+    errors = _ref2.errors;
   // eslint-disable-next-line no-console
   console.log(item, errors);
   var statusLine;

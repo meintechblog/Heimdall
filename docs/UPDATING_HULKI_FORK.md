@@ -21,7 +21,9 @@ Keep `2.x` close to upstream Heimdall. Keep all Hulki-specific behavior on the c
 The overlay export currently includes:
 
 - `app/Item.php`
+- `app/Http/Controllers/DiscoveryController.php`
 - `app/Search.php`
+- `app/Support/Discovery/WledDiscoveryService.php`
 - `app/SupportedApps/Proxmox/Proxmox.php`
 - `app/SupportedApps/Proxmox/app.json`
 - `app/SupportedApps/Proxmox/config.blade.php`
@@ -37,10 +39,12 @@ The overlay export currently includes:
 - `config/app.php`
 - `resources/assets/js/app.js`
 - `resources/assets/js/dashboardFilters.js`
+- `resources/assets/js/discoveryPanel.js`
 - `resources/assets/js/fileflowsTileControls.js`
 - `resources/assets/sass/_app.scss`
 - `resources/views/item.blade.php`
 - `resources/views/items/livestats/fileflows.blade.php`
+- `resources/views/partials/discovery.blade.php`
 - `resources/views/partials/taglist.blade.php`
 - `resources/views/sortable.blade.php`
 - `resources/views/welcome.blade.php`
@@ -183,6 +187,14 @@ For the VenusOS tile customization, confirm:
 - a configured tile shows `PV`, `Battery`, and `Grid`
 - `Grid` uses a green up-arrow for export and a red down-arrow for import
 - the live deploy re-registers the private `VenusOS` app type automatically
+
+For the WLED auto-discovery flow, confirm:
+
+- `GET /discoveries/summary` responds on the live instance
+- the dashboard only shows the `+` button when there really are WLED devices not already covered by existing item URLs
+- clicking `+` expands prepared WLED tiles above the search bar
+- clicking one prepared WLED tile creates a normal pinned Heimdall item in the `WLED` group
+- when no new WLED devices exist, the discovery button stays hidden
 
 For live operations, keep CT100 on a normal web stack (`nginx` + `php-fpm`) instead of `php artisan serve`. The built-in Laravel dev server is acceptable for quick local testing, but it is too fragile for live dashboard traffic and multiple parallel live-stat requests.
 

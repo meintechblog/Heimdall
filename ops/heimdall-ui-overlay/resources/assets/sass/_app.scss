@@ -27,6 +27,165 @@ body {
 	opacity: 0;
 	visibility: hidden;
 }
+.discovery-hub {
+	margin: 0 auto 18px;
+	max-width: 840px;
+}
+.discovery-toolbar {
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	margin-bottom: 12px;
+}
+.discovery-toggle {
+	position: relative;
+	width: 58px;
+	height: 58px;
+	border: 0;
+	border-radius: 16px;
+	background: linear-gradient(180deg, rgba(0, 0, 0, 0.82), rgba(25, 29, 35, 0.92));
+	color: #ffffff;
+	box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: transform 0.18s ease, opacity 0.18s ease, box-shadow 0.18s ease;
+	&:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 14px 28px rgba(0, 0, 0, 0.34), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+	}
+	&.is-hidden {
+		display: none;
+	}
+}
+.discovery-toggle-icon {
+	font-size: 28px;
+	font-weight: 600;
+	line-height: 1;
+}
+.discovery-toggle-count {
+	position: absolute;
+	top: -5px;
+	right: -5px;
+	min-width: 22px;
+	height: 22px;
+	padding: 0 6px;
+	border-radius: 999px;
+	background: #ff6b6b;
+	color: #ffffff;
+	font-size: 12px;
+	font-weight: 700;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.28);
+}
+.discovery-panel {
+	padding: 14px;
+	border-radius: 16px;
+	background: rgba(5, 9, 15, 0.48);
+	backdrop-filter: blur(12px);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+	&.is-hidden {
+		display: none;
+	}
+}
+.discovery-panel-state {
+	color: rgba(255, 255, 255, 0.74);
+	font-size: 13px;
+	padding: 6px 2px 2px;
+	&.is-hidden {
+		display: none;
+	}
+}
+.discovery-candidate-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+.discovery-candidate {
+	width: min(100%, 320px);
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+	text-align: left;
+}
+.discovery-candidate-card {
+	min-height: 94px;
+	display: flex;
+	align-items: center;
+	width: 100%;
+	padding: 16px;
+	border-radius: 14px;
+	background: linear-gradient(90deg, rgba(53, 61, 71, 0.92) 0%, rgba(84, 92, 101, 0.92) 100%);
+	color: #ffffff;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+	transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.discovery-candidate:hover .discovery-candidate-card {
+	transform: translateY(-1px);
+	box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.discovery-candidate:disabled {
+	cursor: progress;
+}
+.discovery-candidate:disabled .discovery-candidate-card {
+	opacity: 0.85;
+}
+.discovery-candidate-details {
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	flex: 1 1 auto;
+}
+.discovery-candidate-source {
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: rgba(255, 255, 255, 0.68);
+}
+.discovery-candidate-title {
+	font-size: 18px;
+	font-weight: 600;
+	line-height: 1.1;
+}
+.discovery-candidate-meta {
+	font-size: 12px;
+	color: rgba(255, 255, 255, 0.76);
+}
+.discovery-candidate-action {
+	margin-left: 12px;
+	padding: 9px 12px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.12);
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	white-space: nowrap;
+}
+.discovery-candidate.is-adding .tile-icon-loading-overlay {
+	opacity: 1;
+	visibility: visible;
+}
+.discovery-candidate.is-adding .tile-icon-loading-overlay.is-hidden {
+	opacity: 1;
+	visibility: visible;
+}
+.discovery-candidate .tile-icon-loading-overlay {
+	z-index: 1;
+}
+.discovery-candidate .app-icon-container {
+	margin-right: 16px;
+}
+.discovery-candidate .app-icon {
+	border-radius: 12px;
+}
 .tile-icon-loading-visual {
 	position: absolute;
 	top: 50%;
@@ -1362,6 +1521,28 @@ select:-webkit-autofill:focus {
 	}
 	a:not(:focus-within) {
 		opacity: 0.4;
+	}
+}
+
+@media (max-width: 700px) {
+	.discovery-hub {
+		margin-bottom: 14px;
+	}
+	.discovery-toolbar {
+		justify-content: center;
+	}
+	.discovery-toggle {
+		width: 54px;
+		height: 54px;
+	}
+	.discovery-candidate {
+		width: 100%;
+	}
+	.discovery-candidate-card {
+		padding: 14px;
+	}
+	.discovery-candidate-action {
+		display: none;
 	}
 }
 

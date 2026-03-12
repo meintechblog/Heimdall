@@ -1,6 +1,7 @@
 <?php
 
 use App\Application;
+use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HomeController;
@@ -74,6 +75,11 @@ Route::post('order', [ItemController::class,'setOrder'])->name('items.order');
 Route::post('appload', [ItemController::class,'appload'])->name('appload');
 Route::post('test_config', [ItemController::class,'testConfig'])->name('test_config');
 Route::get('get_stats/{id}', [ItemController::class,'getStats'])->name('get_stats');
+Route::name('discoveries.')->prefix('discoveries')->group(function () {
+    Route::get('/summary', [DiscoveryController::class, 'summary'])->name('summary');
+    Route::get('/candidates', [DiscoveryController::class, 'candidates'])->name('candidates');
+    Route::post('/items', [DiscoveryController::class, 'store'])->name('store');
+});
 
 Route::get('/search', [SearchController::class,'index'])->name('search');
 Route::get('/search/autocomplete', [SearchController::class,'autocomplete'])->name('search.autocomplete');

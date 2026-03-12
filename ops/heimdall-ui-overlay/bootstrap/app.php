@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'order',
             'appload',
             'test_config',
+            'discoveries/items',
             'items/*/fileflows/toggle',
             //'get_stats'
         ]);

@@ -115,6 +115,17 @@ class DashTest extends TestCase
         $response->assertSee('input type="text" name="q"', false);
     }
 
+    public function test_displays_the_discovery_hub_on_the_dash_for_admins(): void
+    {
+        $this->seed();
+
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSee('id="discovery-hub"', false);
+        $response->assertSee('/discoveries/summary', false);
+    }
+
     public function test_displays_the_shared_icon_loading_overlay_for_proxmox_tiles(): void
     {
         $this->seed();

@@ -44,6 +44,7 @@ Das macht:
 - VenusOS-Kacheln lesen lokal per `MQTT on LAN (Plaintext)` auf Port `1883`; für `VenusOS Hallbude 3.11` ist die Portal-ID aktuell `dca6327406c5`.
 - Der Live-Deploy registriert den privaten Anwendungstyp `VenusOS` automatisch erneut, falls Heimdall-Updates ihn aus der Datenbank werfen.
 - Neue Live-Stat-Kacheln sollen sich an `docs/plans/2026-03-12-heimdall-tile-ci-design.md` orientieren, damit Spinner, Polling und Fallbacks gleich bleiben.
+- WLED-Auto-Discovery scannt absichtlich gecacht im Hintergrund; wenn du das enger ziehen willst, setze `DISCOVERY_WLED_HOSTS` auf eine feste Hostliste statt das lokale `/24` abzutasten.
 
 ## Schnelle Live-Checks
 
@@ -51,6 +52,7 @@ Das macht:
 curl -I http://192.168.3.88/
 curl -I http://192.168.3.103:19200/
 curl -I http://192.168.3.12:5000/
+curl -s http://192.168.3.88/discoveries/summary
 ```
 
 ## Wichtige Detail-Doku

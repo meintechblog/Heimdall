@@ -13,6 +13,20 @@ return [
 
     'allow_insecure_remote_icon_tls' => env('ALLOW_INSECURE_REMOTE_ICON_TLS', false),
 
+    'discovery' => [
+        'summary_refresh_seconds' => (int) env('DISCOVERY_SUMMARY_REFRESH_SECONDS', 300),
+        'wled' => [
+            'hosts' => array_values(array_filter(array_map(
+                static fn ($host) => trim($host),
+                explode(',', (string) env('DISCOVERY_WLED_HOSTS', ''))
+            ))),
+            'cache_ttl_seconds' => (int) env('DISCOVERY_WLED_CACHE_TTL_SECONDS', 900),
+            'timeout_seconds' => (float) env('DISCOVERY_WLED_TIMEOUT_SECONDS', 0.8),
+            'connect_timeout_seconds' => (float) env('DISCOVERY_WLED_CONNECT_TIMEOUT_SECONDS', 0.4),
+            'chunk_size' => (int) env('DISCOVERY_WLED_CHUNK_SIZE', 24),
+        ],
+    ],
+
     'aliases' => Facade::defaultAliases()->merge([
         'EnhancedApps' => App\EnhancedApps::class,
         'Form' => App\Facades\Form::class,

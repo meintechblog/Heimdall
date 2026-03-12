@@ -8,6 +8,8 @@ BUILD_ASSETS=0
 
 FILES=(
   "app/Item.php"
+  "app/Http/Controllers/DiscoveryController.php"
+  "app/Support/Discovery/WledDiscoveryService.php"
   "app/Search.php"
   "app/SupportedApps/Proxmox/Proxmox.php"
   "app/SupportedApps/Proxmox/app.json"
@@ -24,10 +26,12 @@ FILES=(
   "config/app.php"
   "resources/assets/js/app.js"
   "resources/assets/js/dashboardFilters.js"
+  "resources/assets/js/discoveryPanel.js"
   "resources/assets/js/fileflowsTileControls.js"
   "resources/assets/sass/_app.scss"
   "resources/views/item.blade.php"
   "resources/views/items/livestats/fileflows.blade.php"
+  "resources/views/partials/discovery.blade.php"
   "resources/views/partials/taglist.blade.php"
   "resources/views/sortable.blade.php"
   "resources/views/welcome.blade.php"

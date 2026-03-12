@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+    @include('partials.discovery')
     @include('partials.search')
     @include('partials.taglist')
 

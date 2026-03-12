@@ -29,6 +29,7 @@ use enshrined\svgSanitize\Sanitizer;
 class ItemController extends Controller
 {
     protected const FILEFLOWS_CLASS = 'App\\SupportedApps\\FileFlows\\FileFlows';
+    protected const FILEFLOWS_PERMANENT_PAUSE_MINUTES = 52560000;
 
     public function __construct()
     {
@@ -630,9 +631,13 @@ class ItemController extends Controller
         $settings = $this->fileFlowsSettings($item);
 
         if ((bool) ($settings['IsPaused'] ?? false)) {
-            $response = $this->fileFlowsRequest($item, 'post', 'api/system/pause?abort=true');
+            $response = $this->fileFlowsRequest($item, 'post', 'api/system/pause?duration=0');
         } else {
-            $response = $this->fileFlowsRequest($item, 'post', 'api/system/pause?duration=1');
+            $response = $this->fileFlowsRequest(
+                $item,
+                'post',
+                'api/system/pause?duration='.self::FILEFLOWS_PERMANENT_PAUSE_MINUTES
+            );
         }
 
         if (! $response->successful()) {
@@ -704,14 +709,14 @@ class ItemController extends Controller
         return $response->json() ?? [];
     }
 
-    protected function fileFlowsRequest(Item $item, string $method, string $endpoint)
+    protected function fileFlowsRequest(Item $item, string $method, string $endpoint, array $options = [])
     {
         $url = rtrim($item->getconfig()->url, '/').'/'.$endpoint;
 
         return Http::timeout(15)
             ->connectTimeout(15)
             ->acceptJson()
-            ->send($method, $url);
+            ->send($method, $url, $options);
     }
 
     protected static function remoteIconStreamContextOptions(): array

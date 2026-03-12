@@ -59,7 +59,7 @@ class FileFlowsProcessingToggleTest extends TestCase
                 'processed' => 25,
                 'time' => '',
             ], 200),
-            'http://fileflows.local/api/system/pause?abort=true' => Http::response(
+            'http://fileflows.local/api/system/pause?duration=0' => Http::response(
                 '0001-01-01T00:00:00',
                 200
             ),
@@ -72,8 +72,55 @@ class FileFlowsProcessingToggleTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('processingState', 'running');
         $response->assertJsonPath('toggleAction', 'pause');
+        $response->assertJsonPath('pausedUntil', '0001-01-01T00:00:00');
 
-        Http::assertSent(fn ($request) => $request->url() === 'http://fileflows.local/api/system/pause?abort=true');
+        Http::assertSent(fn ($request) => $request->url() === 'http://fileflows.local/api/system/pause?duration=0');
+    }
+
+    public function test_toggle_endpoint_pauses_a_running_fileflows_instance_until_far_future(): void
+    {
+        $this->seed();
+
+        Http::fake([
+            'http://fileflows.local/api/settings' => Http::sequence()
+                ->push([
+                    'IsPaused' => false,
+                    'PausedUntil' => '0001-01-01T00:00:00',
+                ], 200)
+                ->push([
+                    'IsPaused' => true,
+                    'PausedUntil' => '2099-12-31T23:59:59Z',
+                ], 200),
+            'http://fileflows.local/api/settings/ui-settings' => Http::sequence()
+                ->push([
+                    'Uid' => '1d75462a-f912-41ea-bb1b-ec17dc9b11b8',
+                    'Name' => 'Settings',
+                    'PausedUntil' => '0001-01-01T00:00:00',
+                    'IsPaused' => false,
+                ], 200)
+                ->push('', 200),
+            'http://fileflows.local/api/status' => Http::response([
+                'queue' => 0,
+                'processing' => 0,
+                'processed' => 25,
+                'time' => '',
+            ], 200),
+            'http://fileflows.local/api/system/pause?duration=52560000' => Http::response(
+                '2126-02-16T09:47:57.576397Z',
+                200
+            ),
+        ]);
+
+        $item = $this->createFileFlowsItem();
+
+        $response = $this->post('/items/'.$item->id.'/fileflows/toggle');
+
+        $response->assertOk();
+        $response->assertJsonPath('processingState', 'paused');
+        $response->assertJsonPath('toggleAction', 'resume');
+        $response->assertJsonPath('pausedUntil', '2099-12-31T23:59:59Z');
+
+        Http::assertSent(fn ($request) => $request->url() === 'http://fileflows.local/api/system/pause?duration=52560000');
     }
 
     private function createFileFlowsItem(): Item

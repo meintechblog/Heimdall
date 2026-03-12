@@ -30,6 +30,21 @@ class DashTest extends TestCase
         ]);
     }
 
+    private function addPinnedEnhancedItem(array $attributes)
+    {
+        $item = Item::factory()->create(array_merge([
+            'pinned' => 1,
+            'user_id' => 0,
+        ], $attributes));
+
+        ItemTag::factory()->create([
+            'item_id' => $item->id,
+            'tag_id' => 0,
+        ]);
+
+        return $item;
+    }
+
     private function addTagWithTitleToDB($title)
     {
         Item::factory()
@@ -98,5 +113,26 @@ class DashTest extends TestCase
         $response->assertOk();
         $response->assertDontSee('<select name="provider">', false);
         $response->assertSee('input type="text" name="q"', false);
+    }
+
+    public function test_displays_the_shared_icon_loading_overlay_for_proxmox_tiles(): void
+    {
+        $this->seed();
+
+        $this->addPinnedEnhancedItem([
+            'title' => 'Proxmox Spinner Test',
+            'url' => 'https://proxmox.local:8006',
+            'class' => 'App\\SupportedApps\\Proxmox\\Proxmox',
+            'appid' => '391f2b7f3fe853e1ea09723eeafc354fa291ab48',
+            'description' => json_encode([
+                'enabled' => true,
+            ]),
+        ]);
+
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSee('Proxmox Spinner Test');
+        $response->assertSee('tile-icon-loading-overlay', false);
     }
 }

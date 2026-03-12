@@ -79,6 +79,7 @@ This fork also carries a repo-managed Proxmox enhanced-tile customization:
 - the Proxmox app config is available even before live API details have been saved
 - the tile can use token-based Proxmox API access with optional URL override, node filtering, and optional TLS-skip mode
 - the live tile stats focus on `Guests`, `CPU`, and `RAM`
+- the tile uses the shared left-icon loading overlay pattern used by the custom live-stat tiles
 
 This fork also carries a private `VenusOS` enhanced app for local Victron/Venus devices:
 
@@ -86,6 +87,8 @@ This fork also carries a private `VenusOS` enhanced app for local Victron/Venus 
 - the live tile stats focus on `PV`, `Battery`, and `Grid`
 - `Grid` uses a green up-arrow for export and a red down-arrow for import
 - power values stay in `W` below `1000 W` and switch to `kW` with one decimal place above that
+
+Shared Heimdall tile design rules for the Hulki fork are documented in `docs/plans/2026-03-12-heimdall-tile-ci-design.md`. Use that as the baseline when adding new live-stat tile extensions so loading behavior, polling discipline, and icon-area feedback stay consistent.
 
 To replay the Hulki customizations quickly after a Heimdall update, use:
 

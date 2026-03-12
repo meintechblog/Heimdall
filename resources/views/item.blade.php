@@ -1,6 +1,7 @@
                     @php
                         $isFileFlowsTile = $app->class === 'App\\SupportedApps\\FileFlows\\FileFlows' && $app->enabled();
                         $liveAppName = $app->class ? App\Item::nameFromClass($app->class) : '';
+                        $usesSharedIconLoadingOverlay = $app->enabled() && in_array($liveAppName, ['Proxmox', 'VenusOS'], true);
                     @endphp
                     <section class="item-container{{ $app->droppable . ' ' . $app->getTagClass()}}" data-name="{{ $app->title }}" data-id="{{ $app->id }}">
                         <div class="item" style="background-color: {{ $app->colour }}">
@@ -10,7 +11,7 @@
                                 @else
                                 <img class="app-icon" src="{{ asset('/img/heimdall-icon-small.png') }}" />
                                 @endif
-                                @if($liveAppName === 'VenusOS' && $app->enabled())
+                                @if($usesSharedIconLoadingOverlay)
                                 <div class="tile-icon-loading-overlay" aria-hidden="true">
                                     <span class="tile-icon-loading-visual">
                                         <span class="tile-icon-loading-spinner tile-icon-loading-spinner-ring" aria-hidden="true"></span>

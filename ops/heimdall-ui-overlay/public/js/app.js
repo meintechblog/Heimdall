@@ -4783,17 +4783,89 @@ function queueInitialUpdates(containers, enqueueUpdate) {
     }, getInitialRequestDelay(index));
   });
 }
+function isElementInViewport(element) {
+  var view = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : typeof window !== "undefined" ? window : null;
+  if (!view || typeof element.getBoundingClientRect !== "function") {
+    return true;
+  }
+  var rect = element.getBoundingClientRect();
+  var viewportHeight = view.innerHeight || 0;
+  return rect.bottom >= 0 && rect.top <= viewportHeight;
+}
+function createVisibilityTracker(containers) {
+  var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+  var view = options.window || (typeof window !== "undefined" ? window : null);
+  var observerFactory = options.observerFactory || (typeof IntersectionObserver !== "undefined" ? function (callback, observerOptions) {
+    return new IntersectionObserver(callback, observerOptions);
+  } : null);
+  var visibilityState = new WeakMap();
+  var visibleCallback = null;
+  var observer = null;
+  if (observerFactory) {
+    observer = observerFactory(function (entries) {
+      entries.forEach(function (entry) {
+        visibilityState.set(entry.target, entry.isIntersecting);
+        if (entry.isIntersecting && visibleCallback) {
+          visibleCallback(entry.target);
+        }
+      });
+    }, {
+      rootMargin: "200px 0px"
+    });
+    Array.from(containers).forEach(function (container) {
+      observer.observe(container);
+    });
+  }
+  return {
+    isVisible: function isVisible(container) {
+      if (visibilityState.has(container)) {
+        return visibilityState.get(container);
+      }
+      return isElementInViewport(container, view);
+    },
+    setVisibleCallback: function setVisibleCallback(callback) {
+      visibleCallback = callback;
+    },
+    disconnect: function disconnect() {
+      if (observer && typeof observer.disconnect === "function") {
+        observer.disconnect();
+      }
+    }
+  };
+}
+function createUpdateScheduler(queue, createJob) {
+  var schedule = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : setTimeout;
+  var scheduledIds = new Set();
+  return function (container) {
+    var delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    var containerId = container.getAttribute("data-id");
+    if (scheduledIds.has(containerId)) {
+      return;
+    }
+    scheduledIds.add(containerId);
+    schedule(function () {
+      queue.push(function () {
+        scheduledIds["delete"](containerId);
+        return createJob(container)();
+      });
+    }, delay);
+  };
+}
 
 /**
  * @param {HTMLElement} container
- * @param {array} queue
+ * @param {Function} scheduleUpdate
+ * @param {{isVisible: function(HTMLElement): boolean}|null} visibilityTracker
  * @returns {function(): Promise<Response>}
  */
-function createUpdateJob(container, queue) {
+function createUpdateJob(container, scheduleUpdate, visibilityTracker) {
   var id = container.getAttribute("data-id");
   // Data only attribute seems to indicate that the item should not be updated that often
   var isDataOnly = container.getAttribute("data-dataonly") === "1";
   return function () {
+    if (visibilityTracker && !visibilityTracker.isVisible(container)) {
+      return Promise.resolve();
+    }
     return fetch("get_stats/".concat(id)).then(function (response) {
       if (response.ok) {
         return response.json();
@@ -4806,19 +4878,21 @@ function createUpdateJob(container, queue) {
         fileFlowsTileControls.updateTileState(container, data);
       }
       var isActive = data.status === "active";
-      if (queue) {
-        setTimeout(function () {
-          queue.push(createUpdateJob(container, queue));
-        }, getQueueInterval(isDataOnly, isActive));
+      if (scheduleUpdate) {
+        scheduleUpdate(container, getQueueInterval(isDataOnly, isActive));
       }
     })["catch"](function (error) {
       // eslint-disable-next-line no-console
       console.error(error);
+      if (scheduleUpdate) {
+        scheduleUpdate(container, REFRESH_INTERVAL_BIG);
+      }
     });
   };
 }
 if ((typeof module === "undefined" ? "undefined" : _typeof(module)) === "object" && module.exports) {
   module.exports = {
+    createVisibilityTracker: createVisibilityTracker,
     getInitialRequestDelay: getInitialRequestDelay,
     queueInitialUpdates: queueInitialUpdates
   };
@@ -4827,8 +4901,15 @@ if (typeof document !== "undefined") {
   var livestatContainers = getContainers();
   if (livestatContainers.length > 0) {
     var myQueue = createQueue();
+    var visibilityTracker = createVisibilityTracker(livestatContainers);
+    var scheduleUpdate = createUpdateScheduler(myQueue, function (container) {
+      return createUpdateJob(container, scheduleUpdate, visibilityTracker);
+    });
+    visibilityTracker.setVisibleCallback(function (container) {
+      scheduleUpdate(container);
+    });
     queueInitialUpdates(livestatContainers, function (container) {
-      createUpdateJob(container, myQueue)();
+      scheduleUpdate(container);
     });
   }
 }

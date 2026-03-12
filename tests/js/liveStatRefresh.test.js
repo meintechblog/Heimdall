@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
+  createVisibilityTracker,
   getInitialRequestDelay,
   queueInitialUpdates,
 } = require("../../resources/assets/js/liveStatRefresh");
@@ -26,4 +27,46 @@ test("spreads initial live-stat requests across short staggered delays", () => {
   assert.equal(getInitialRequestDelay(2), 300);
   assert.deepEqual(delays, [0, 150, 300]);
   assert.deepEqual(scheduledContainers, ["one", "two", "three"]);
+});
+
+test("tracks visible containers and triggers updates when they enter the viewport", () => {
+  const visibleCallbacks = [];
+  let observerCallback = null;
+
+  const firstContainer = {
+    getAttribute: () => "1",
+    getBoundingClientRect: () => ({ top: 0, bottom: 50 }),
+  };
+  const secondContainer = {
+    getAttribute: () => "2",
+    getBoundingClientRect: () => ({ top: 2000, bottom: 2100 }),
+  };
+
+  const tracker = createVisibilityTracker([firstContainer, secondContainer], {
+    window: { innerHeight: 800 },
+    observerFactory: (callback) => {
+      observerCallback = callback;
+      return {
+        observe() {},
+        disconnect() {},
+      };
+    },
+  });
+
+  tracker.setVisibleCallback((container) => {
+    visibleCallbacks.push(container.getAttribute("data-id"));
+  });
+
+  assert.equal(tracker.isVisible(firstContainer), true);
+  assert.equal(tracker.isVisible(secondContainer), false);
+
+  observerCallback([
+    {
+      target: secondContainer,
+      isIntersecting: true,
+    },
+  ]);
+
+  assert.equal(tracker.isVisible(secondContainer), true);
+  assert.deepEqual(visibleCallbacks, ["2"]);
 });

@@ -20,7 +20,12 @@ Keep `2.x` close to upstream Heimdall. Keep all Hulki-specific behavior on the c
 
 The overlay export currently includes:
 
+- `app/Item.php`
 - `app/Search.php`
+- `app/SupportedApps/Proxmox/Proxmox.php`
+- `app/SupportedApps/Proxmox/app.json`
+- `app/SupportedApps/Proxmox/config.blade.php`
+- `app/SupportedApps/Proxmox/livestats.blade.php`
 - `app/Providers/AppServiceProvider.php`
 - `app/Http/Controllers/ItemController.php`
 - `bootstrap/app.php`
@@ -65,6 +70,7 @@ git rebase --continue
 npm run lint
 npm run test:js
 APP_ENV=testing DB_CONNECTION=sqlite DB_DATABASE=codex-fileflows-feature.sqlite php artisan test --filter=FileFlowsProcessingToggleTest
+APP_ENV=testing DB_CONNECTION=sqlite DB_DATABASE=codex-proxmox-suite.sqlite php artisan test --filter='(ItemCreateTest|ProxmoxLiveStatsTest)'
 npx mix
 ```
 
@@ -157,6 +163,13 @@ For the FileFlows tile control, confirm:
 - the overlay icon switches between pause and play based on the current FileFlows state
 - `Fileflows MacMini 3.103` and `FileFlows NUC 3.12` stay reachable while toggling
 - pause uses a long-lived native FileFlows pause, not a 1-minute pause
+
+For the Proxmox tile customization, confirm:
+
+- the Proxmox edit form shows the optional config block
+- token ID and token value can be saved
+- a configured tile shows `LXC`, `CPU`, and `RAM`
+- node filtering still works when multiple nodes are configured as a comma-separated list
 
 For remote icon downloads, the secure default is now TLS verification ON. If a live Heimdall instance still needs compatibility with invalid/self-signed remote icon certificates, set `ALLOW_INSECURE_REMOTE_ICON_TLS=true` in the live `.env`, clear config cache, and treat it as a temporary exception rather than the normal setup.
 

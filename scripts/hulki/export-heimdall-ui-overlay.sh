@@ -7,7 +7,12 @@ OVERLAY_DIR="$REPO_ROOT/ops/heimdall-ui-overlay"
 BUILD_ASSETS=0
 
 FILES=(
+  "app/Item.php"
   "app/Search.php"
+  "app/SupportedApps/Proxmox/Proxmox.php"
+  "app/SupportedApps/Proxmox/app.json"
+  "app/SupportedApps/Proxmox/config.blade.php"
+  "app/SupportedApps/Proxmox/livestats.blade.php"
   "app/Providers/AppServiceProvider.php"
   "app/Http/Controllers/ItemController.php"
   "bootstrap/app.php"

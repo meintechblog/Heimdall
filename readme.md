@@ -74,6 +74,12 @@ For long-lived pause/resume, the Hulki fork intentionally uses the native FileFl
 
 This is deliberate. A previous attempt to drive pause/resume through FileFlows `ui-settings` caused at least one live instance to redirect to `/initial-config`, so the fork now avoids that path.
 
+This fork also carries a repo-managed Proxmox enhanced-tile customization:
+
+- the Proxmox app config is available even before live API details have been saved
+- the tile can use token-based Proxmox API access with optional URL override, node filtering, and optional TLS-skip mode
+- the live tile stats focus on `LXC`, `CPU`, and `RAM`
+
 To replay the Hulki customizations quickly after a Heimdall update, use:
 
 ```bash
@@ -100,7 +106,7 @@ The dashboard tile filter UI lives in `/resources/assets/js/dashboardFilters.js`
 Regression coverage for this behavior:
 
 - `npm run test:js`
-- `php artisan test tests/Feature/ItemCreateTest.php tests/Feature/DashTest.php`
+- `php artisan test tests/Feature/ItemCreateTest.php tests/Feature/DashTest.php tests/Feature/ProxmoxLiveStatsTest.php`
 
 ## New background image not being set
 If you are using the docker image or a default php install you may find images over 2MB won't get set as the background image, you just need to change the `upload_max_filesize` in the php.ini.

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Item;
 use App\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -90,5 +91,19 @@ class ItemCreateTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Item A');
+    }
+
+    public function test_treats_a_proxmox_item_without_saved_config_as_an_enhanced_app(): void
+    {
+        $item = Item::factory()->make([
+            'title' => 'Proxmox Test',
+            'url' => 'https://proxmox.local:8006',
+            'user_id' => 0,
+            'class' => 'App\\SupportedApps\\Proxmox\\Proxmox',
+            'appid' => '391f2b7f3fe853e1ea09723eeafc354fa291ab48',
+            'description' => null,
+        ]);
+
+        $this->assertTrue($item->enhanced());
     }
 }

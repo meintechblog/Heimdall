@@ -58,6 +58,8 @@ To update your instance, simply clone this repository or download the zip/tar fi
 ### Hulki fork workflow
 For the Hulki custom fork, use the repo-managed replay workflow in `docs/UPDATING_HULKI_FORK.md`. It covers rebasing the customization branch onto `2.x`, rebuilding assets, exporting the live overlay from the repo with stale-asset protection, syncing the host copy on `proxi1`, and redeploying into CT `100`.
 
+For the short day-to-day command list, use `MAINTENANCE.md`.
+
 ### Hulki custom features
 This fork also carries a small FileFlows dashboard extension for the two live FileFlows tiles:
 

@@ -53,6 +53,8 @@ test("updates the fileflows button to pause when the backend reports running", (
   assert.equal(button.dataset.processingState, "running");
   assert.equal(button.dataset.toggleAction, "pause");
   assert.match(button.getAttribute("aria-label"), /Pause/i);
+  assert.match(button.innerHTML, /fileflows-toggle-icon/);
+  assert.match(button.innerHTML, /fileflows-toggle-icon-pause/);
 });
 
 test("clicking the mini button posts to the FileFlows toggle endpoint without opening the tile", async () => {
@@ -88,4 +90,5 @@ test("clicking the mini button posts to the FileFlows toggle endpoint without op
   assert.equal(clickEvent.defaultPrevented, true);
   assert.equal(button.dataset.processingState, "paused");
   assert.equal(button.dataset.toggleAction, "resume");
+  assert.match(button.innerHTML, /fileflows-toggle-icon-play/);
 });

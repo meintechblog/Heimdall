@@ -20,6 +20,25 @@
     return toggleAction === "resume" ? "play" : "pause";
   }
 
+  function getButtonMarkup(toggleAction) {
+    const icon = getButtonIcon(toggleAction);
+
+    if (icon === "play") {
+      return `
+        <svg class="fileflows-toggle-icon fileflows-toggle-icon-play" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M8 6.5v11l9-5.5-9-5.5z"></path>
+        </svg>
+      `;
+    }
+
+    return `
+      <svg class="fileflows-toggle-icon fileflows-toggle-icon-pause" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <rect x="7" y="6" width="4" height="12" rx="1"></rect>
+        <rect x="13" y="6" width="4" height="12" rx="1"></rect>
+      </svg>
+    `;
+  }
+
   function getButtonLabel(toggleAction) {
     return toggleAction === "resume" ? "Resume FileFlows" : "Pause FileFlows";
   }
@@ -41,8 +60,6 @@
       return null;
     }
 
-    const icon = getButtonIcon(state.toggleAction);
-
     button.dataset.processingState = state.processingState;
     button.dataset.toggleAction = state.toggleAction;
     button.setAttribute("aria-label", getButtonLabel(state.toggleAction));
@@ -50,7 +67,7 @@
     button.classList.toggle("is-paused", state.processingState === "paused");
     button.classList.toggle("is-running", state.processingState === "running");
     button.disabled = false;
-    button.innerHTML = `<i class="fas fa-${icon}"></i>`;
+    button.innerHTML = getButtonMarkup(state.toggleAction).trim();
 
     return button;
   }

@@ -20,7 +20,7 @@
                                     aria-label="Loading FileFlows state"
                                     title="Loading FileFlows state"
                                 >
-                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <span class="fileflows-toggle-loading" aria-hidden="true"></span>
                                 </button>
                                 @endif
                             </div>

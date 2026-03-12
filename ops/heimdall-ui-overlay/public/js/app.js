@@ -4181,6 +4181,13 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
   function getButtonIcon(toggleAction) {
     return toggleAction === "resume" ? "play" : "pause";
   }
+  function getButtonMarkup(toggleAction) {
+    var icon = getButtonIcon(toggleAction);
+    if (icon === "play") {
+      return "\n        <svg class=\"fileflows-toggle-icon fileflows-toggle-icon-play\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">\n          <path d=\"M8 6.5v11l9-5.5-9-5.5z\"></path>\n        </svg>\n      ";
+    }
+    return "\n      <svg class=\"fileflows-toggle-icon fileflows-toggle-icon-pause\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\">\n        <rect x=\"7\" y=\"6\" width=\"4\" height=\"12\" rx=\"1\"></rect>\n        <rect x=\"13\" y=\"6\" width=\"4\" height=\"12\" rx=\"1\"></rect>\n      </svg>\n    ";
+  }
   function getButtonLabel(toggleAction) {
     return toggleAction === "resume" ? "Resume FileFlows" : "Pause FileFlows";
   }
@@ -4197,7 +4204,6 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     if (!button || !state.processingState || !state.toggleAction) {
       return null;
     }
-    var icon = getButtonIcon(state.toggleAction);
     button.dataset.processingState = state.processingState;
     button.dataset.toggleAction = state.toggleAction;
     button.setAttribute("aria-label", getButtonLabel(state.toggleAction));
@@ -4205,7 +4211,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     button.classList.toggle("is-paused", state.processingState === "paused");
     button.classList.toggle("is-running", state.processingState === "running");
     button.disabled = false;
-    button.innerHTML = "<i class=\"fas fa-".concat(icon, "\"></i>");
+    button.innerHTML = getButtonMarkup(state.toggleAction).trim();
     return button;
   }
   function handleToggleClick(_x) {

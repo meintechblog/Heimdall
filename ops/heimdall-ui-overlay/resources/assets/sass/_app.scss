@@ -41,6 +41,29 @@ body {
 		opacity: 0.75;
 	}
 }
+.fileflows-toggle-icon {
+	width: 14px;
+	height: 14px;
+	display: block;
+	fill: currentColor;
+}
+.fileflows-toggle-loading {
+	width: 14px;
+	height: 14px;
+	display: block;
+	border: 2px solid rgba(255, 255, 255, 0.35);
+	border-top-color: #ffffff;
+	border-radius: 50%;
+	animation: fileflows-toggle-spin 0.8s linear infinite;
+}
+@keyframes fileflows-toggle-spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
 #switchuser {
 	background: rgba(0,0,0,0.5); 
 	position: absolute; 

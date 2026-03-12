@@ -2,7 +2,9 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
+  createActivityTracker,
   createVisibilityTracker,
+  scheduleVisibleContainers,
   getInitialRequestDelay,
   queueInitialUpdates,
 } = require("../../resources/assets/js/liveStatRefresh");
@@ -69,4 +71,53 @@ test("tracks visible containers and triggers updates when they enter the viewpor
 
   assert.equal(tracker.isVisible(secondContainer), true);
   assert.deepEqual(visibleCallbacks, ["2"]);
+});
+
+test("tracks whether the browser tab is active and triggers a resume callback", () => {
+  const listeners = {};
+  const activityCallbacks = [];
+  const fakeDocument = {
+    hidden: true,
+    addEventListener(eventName, callback) {
+      listeners[eventName] = callback;
+    },
+  };
+
+  const tracker = createActivityTracker(fakeDocument);
+  tracker.setActiveCallback(() => {
+    activityCallbacks.push("active");
+  });
+
+  assert.equal(tracker.isActive(), false);
+
+  fakeDocument.hidden = false;
+  listeners.visibilitychange();
+
+  assert.equal(tracker.isActive(), true);
+  assert.deepEqual(activityCallbacks, ["active"]);
+});
+
+test("only schedules visible containers while the tab is active", () => {
+  const scheduled = [];
+  const visibleContainer = { name: "visible" };
+  const hiddenContainer = { name: "hidden" };
+
+  scheduleVisibleContainers(
+    [visibleContainer, hiddenContainer],
+    {
+      isVisible(container) {
+        return container === visibleContainer;
+      },
+    },
+    {
+      isActive() {
+        return true;
+      },
+    },
+    (container) => {
+      scheduled.push(container.name);
+    }
+  );
+
+  assert.deepEqual(scheduled, ["visible"]);
 });

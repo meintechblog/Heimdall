@@ -74,6 +74,32 @@ function queueInitialUpdates(containers, enqueueUpdate, schedule = setTimeout) {
   });
 }
 
+function createActivityTracker(
+  docRef = typeof document !== "undefined" ? document : null
+) {
+  let active = !docRef || docRef.hidden !== true;
+  let activeCallback = null;
+
+  if (docRef && typeof docRef.addEventListener === "function") {
+    docRef.addEventListener("visibilitychange", () => {
+      active = docRef.hidden !== true;
+
+      if (active && activeCallback) {
+        activeCallback();
+      }
+    });
+  }
+
+  return {
+    isActive() {
+      return active;
+    },
+    setActiveCallback(callback) {
+      activeCallback = callback;
+    },
+  };
+}
+
 function isElementInViewport(
   element,
   view = typeof window !== "undefined" ? window : null
@@ -162,6 +188,23 @@ function createUpdateScheduler(queue, createJob, schedule = setTimeout) {
   };
 }
 
+function scheduleVisibleContainers(
+  containers,
+  visibilityTracker,
+  activityTracker,
+  scheduleUpdate
+) {
+  if (activityTracker && !activityTracker.isActive()) {
+    return;
+  }
+
+  Array.from(containers).forEach((container) => {
+    if (!visibilityTracker || visibilityTracker.isVisible(container)) {
+      scheduleUpdate(container);
+    }
+  });
+}
+
 /**
  * @param {HTMLElement} container
  * @param {Function} scheduleUpdate
@@ -212,9 +255,11 @@ function createUpdateJob(container, scheduleUpdate, visibilityTracker) {
 
 if (typeof module === "object" && module.exports) {
   module.exports = {
+    createActivityTracker,
     createVisibilityTracker,
     getInitialRequestDelay,
     queueInitialUpdates,
+    scheduleVisibleContainers,
   };
 }
 
@@ -223,17 +268,34 @@ if (typeof document !== "undefined") {
 
   if (livestatContainers.length > 0) {
     const myQueue = createQueue();
+    const activityTracker = createActivityTracker(document);
     const visibilityTracker = createVisibilityTracker(livestatContainers);
     const scheduleUpdate = createUpdateScheduler(myQueue, (container) =>
       createUpdateJob(container, scheduleUpdate, visibilityTracker)
     );
 
     visibilityTracker.setVisibleCallback((container) => {
-      scheduleUpdate(container);
+      if (activityTracker.isActive()) {
+        scheduleUpdate(container);
+      }
+    });
+
+    activityTracker.setActiveCallback(() => {
+      scheduleVisibleContainers(
+        livestatContainers,
+        visibilityTracker,
+        activityTracker,
+        scheduleUpdate
+      );
     });
 
     queueInitialUpdates(livestatContainers, (container) => {
-      scheduleUpdate(container);
+      if (
+        activityTracker.isActive() &&
+        visibilityTracker.isVisible(container)
+      ) {
+        scheduleUpdate(container);
+      }
     });
   }
 }

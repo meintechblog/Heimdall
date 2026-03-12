@@ -4783,6 +4783,27 @@ function queueInitialUpdates(containers, enqueueUpdate) {
     }, getInitialRequestDelay(index));
   });
 }
+function createActivityTracker() {
+  var docRef = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : typeof document !== "undefined" ? document : null;
+  var active = !docRef || docRef.hidden !== true;
+  var activeCallback = null;
+  if (docRef && typeof docRef.addEventListener === "function") {
+    docRef.addEventListener("visibilitychange", function () {
+      active = docRef.hidden !== true;
+      if (active && activeCallback) {
+        activeCallback();
+      }
+    });
+  }
+  return {
+    isActive: function isActive() {
+      return active;
+    },
+    setActiveCallback: function setActiveCallback(callback) {
+      activeCallback = callback;
+    }
+  };
+}
 function isElementInViewport(element) {
   var view = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : typeof window !== "undefined" ? window : null;
   if (!view || typeof element.getBoundingClientRect !== "function") {
@@ -4851,6 +4872,16 @@ function createUpdateScheduler(queue, createJob) {
     }, delay);
   };
 }
+function scheduleVisibleContainers(containers, visibilityTracker, activityTracker, scheduleUpdate) {
+  if (activityTracker && !activityTracker.isActive()) {
+    return;
+  }
+  Array.from(containers).forEach(function (container) {
+    if (!visibilityTracker || visibilityTracker.isVisible(container)) {
+      scheduleUpdate(container);
+    }
+  });
+}
 
 /**
  * @param {HTMLElement} container
@@ -4892,24 +4923,34 @@ function createUpdateJob(container, scheduleUpdate, visibilityTracker) {
 }
 if ((typeof module === "undefined" ? "undefined" : _typeof(module)) === "object" && module.exports) {
   module.exports = {
+    createActivityTracker: createActivityTracker,
     createVisibilityTracker: createVisibilityTracker,
     getInitialRequestDelay: getInitialRequestDelay,
-    queueInitialUpdates: queueInitialUpdates
+    queueInitialUpdates: queueInitialUpdates,
+    scheduleVisibleContainers: scheduleVisibleContainers
   };
 }
 if (typeof document !== "undefined") {
   var livestatContainers = getContainers();
   if (livestatContainers.length > 0) {
     var myQueue = createQueue();
+    var activityTracker = createActivityTracker(document);
     var visibilityTracker = createVisibilityTracker(livestatContainers);
     var scheduleUpdate = createUpdateScheduler(myQueue, function (container) {
       return createUpdateJob(container, scheduleUpdate, visibilityTracker);
     });
     visibilityTracker.setVisibleCallback(function (container) {
-      scheduleUpdate(container);
+      if (activityTracker.isActive()) {
+        scheduleUpdate(container);
+      }
+    });
+    activityTracker.setActiveCallback(function () {
+      scheduleVisibleContainers(livestatContainers, visibilityTracker, activityTracker, scheduleUpdate);
     });
     queueInitialUpdates(livestatContainers, function (container) {
-      scheduleUpdate(container);
+      if (activityTracker.isActive() && visibilityTracker.isVisible(container)) {
+        scheduleUpdate(container);
+      }
     });
   }
 }

@@ -197,6 +197,8 @@ For the dashboard discovery flow, confirm:
 - clicking a discovery card opens the device itself
 - clicking `Hinzufuegen` creates a normal Heimdall item
 - WLED candidates prefer the configured `mDNS` name when available
+- WLED candidates are deduplicated by device identity (`mac`) so the same controller does not reappear via `.local`, WLAN IP, or LAN IP
+- existing WLED items can keep alias metadata in their stored config and the edit page can switch the active URL between discovered addresses
 - ESPresense candidates prefer the configured `room` name when available
 - when no new discovery devices exist, the discovery button stays hidden
 

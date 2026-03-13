@@ -19,6 +19,8 @@ class WledDiscoveryTest extends TestCase
         parent::setUp();
 
         $this->seed();
+        Storage::fake('public');
+        Storage::disk('public')->put('icons/wled.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aK3sAAAAASUVORK5CYII='));
 
         config([
             'app.url' => 'http://192.168.3.88',
@@ -143,6 +145,141 @@ class WledDiscoveryTest extends TestCase
         $response->assertJsonCount(0, 'candidates');
     }
 
+    public function test_discovery_does_not_show_a_wled_candidate_when_a_local_hostname_item_already_exists(): void
+    {
+        Item::factory()->create([
+            'title' => 'Buero WLED',
+            'url' => 'http://wled-buero.local',
+            'user_id' => 0,
+        ]);
+
+        config([
+            'app.discovery.wled.hosts' => [
+                '192.168.3.57',
+            ],
+        ]);
+
+        Http::fake([
+            'http://192.168.3.57/json/info' => Http::response([
+                'name' => 'WLED',
+                'ver' => '0.14.4',
+                'mac' => 'a8032aa13dd8',
+                'ip' => '192.168.3.57',
+            ], 200),
+            'http://192.168.3.57/json/cfg' => Http::response([
+                'id' => [
+                    'mdns' => 'wled-buero',
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->getJson('/discoveries/candidates');
+
+        $response->assertOk();
+        $response->assertJsonPath('totalCount', 0);
+        $response->assertJsonCount(0, 'candidates');
+    }
+
+    public function test_discovery_merges_multiple_network_hosts_for_the_same_wled_mac(): void
+    {
+        config([
+            'app.discovery.wled.hosts' => [
+                '192.168.3.57',
+                '192.168.3.167',
+            ],
+        ]);
+
+        Http::fake([
+            'http://192.168.3.57/json/info' => Http::response([
+                'name' => 'WLED',
+                'ver' => '0.14.4',
+                'mac' => 'a8032aa13dd8',
+                'ip' => '192.168.3.57',
+            ], 200),
+            'http://192.168.3.57/json/cfg' => Http::response([
+                'id' => [
+                    'mdns' => 'wled-buero',
+                ],
+            ], 200),
+            'http://192.168.3.167/json/info' => Http::response([
+                'name' => 'WLED',
+                'ver' => '0.14.4',
+                'mac' => 'a8032aa13dd8',
+                'ip' => '192.168.3.167',
+            ], 200),
+            'http://192.168.3.167/json/cfg' => Http::response([
+                'id' => [
+                    'mdns' => 'wled-buero',
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->getJson('/discoveries/candidates');
+
+        $response->assertOk();
+        $response->assertJsonPath('totalCount', 1);
+        $response->assertJsonPath('candidates.0.identity.mac', 'a8032aa13dd8');
+        $response->assertJsonFragment([
+            'title' => 'wled-buero',
+        ]);
+
+        $aliases = $response->json('candidates.0.identity.aliases');
+        sort($aliases);
+
+        $this->assertSame([
+            '192.168.3.167',
+            '192.168.3.57',
+            'wled-buero',
+            'wled-buero.local',
+        ], $aliases);
+    }
+
+    public function test_discovery_hides_a_candidate_when_a_matching_wled_mac_is_already_stored_on_the_item(): void
+    {
+        Item::factory()->create([
+            'title' => 'Buero WLED',
+            'url' => 'http://wled-buero.local',
+            'user_id' => 0,
+            'description' => json_encode([
+                'wled_identity' => [
+                    'mac' => 'a8032aa13dd8',
+                    'mdns' => 'wled-buero',
+                    'aliases' => [
+                        'wled-buero.local',
+                        '192.168.3.57',
+                    ],
+                ],
+                'wled_preferred_url' => 'http://wled-buero.local',
+            ]),
+        ]);
+
+        config([
+            'app.discovery.wled.hosts' => [
+                '192.168.3.167',
+            ],
+        ]);
+
+        Http::fake([
+            'http://192.168.3.167/json/info' => Http::response([
+                'name' => 'WLED',
+                'ver' => '0.14.4',
+                'mac' => 'a8032aa13dd8',
+                'ip' => '192.168.3.167',
+            ], 200),
+            'http://192.168.3.167/json/cfg' => Http::response([
+                'id' => [
+                    'mdns' => 'wled-buero',
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->getJson('/discoveries/candidates');
+
+        $response->assertOk();
+        $response->assertJsonPath('totalCount', 0);
+        $response->assertJsonCount(0, 'candidates');
+    }
+
     public function test_discovery_uses_the_request_host_when_app_url_is_localhost(): void
     {
         config([
@@ -207,8 +344,6 @@ class WledDiscoveryTest extends TestCase
 
     public function test_creates_a_new_item_from_a_cached_wled_candidate(): void
     {
-        Storage::disk('public')->put('icons/wled.png', 'wled');
-
         $wledTag = Item::factory()->create([
             'title' => 'WLED',
             'url' => 'wled',
@@ -228,6 +363,14 @@ class WledDiscoveryTest extends TestCase
                 'icon' => 'icons/wled.png',
                 'tagId' => $wledTag->id,
                 'colour' => '#161b1f',
+                'identity' => [
+                    'mac' => 'a8032aa13dd8',
+                    'mdns' => 'wled-buero',
+                    'aliases' => [
+                        '192.168.3.60',
+                        'wled-buero.local',
+                    ],
+                ],
             ],
         ], 900);
 
@@ -247,5 +390,7 @@ class WledDiscoveryTest extends TestCase
         $this->assertSame('icons/wled.png', $item->icon);
         $this->assertSame(1, (int) $item->pinned);
         $this->assertTrue($item->parents->contains('id', $wledTag->id));
+        $this->assertSame('a8032aa13dd8', data_get(json_decode($item->description, true), 'wled_identity.mac'));
+        $this->assertSame('http://192.168.3.60', data_get(json_decode($item->description, true), 'wled_preferred_url'));
     }
 }

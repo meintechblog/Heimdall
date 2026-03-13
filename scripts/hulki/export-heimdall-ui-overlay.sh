@@ -32,6 +32,7 @@ FILES=(
   "resources/assets/sass/_app.scss"
   "resources/views/item.blade.php"
   "resources/views/items/livestats/fileflows.blade.php"
+  "resources/views/items/partials/wled-network-config.blade.php"
   "resources/views/partials/discovery.blade.php"
   "resources/views/partials/search.blade.php"
   "resources/views/partials/taglist.blade.php"

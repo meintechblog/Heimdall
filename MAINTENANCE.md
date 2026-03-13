@@ -45,6 +45,8 @@ Das macht:
 - Der Live-Deploy registriert den privaten Anwendungstyp `VenusOS` automatisch erneut, falls Heimdall-Updates ihn aus der Datenbank werfen.
 - Neue Live-Stat-Kacheln sollen sich an `docs/plans/2026-03-12-heimdall-tile-ci-design.md` orientieren, damit Spinner, Polling und Fallbacks gleich bleiben.
 - Die Discovery scannt absichtlich gecacht im Hintergrund; wenn du das enger ziehen willst, setze `DISCOVERY_WLED_HOSTS` und `DISCOVERY_ESPRESENSE_HOSTS` auf feste Hostlisten statt das lokale `/24` abzutasten.
+- WLED-Discovery dedupliziert ueber die WLED-`mac`, damit dasselbe Geraet nicht noch einmal ueber `.local`, WLAN-IP oder LAN-IP im `+` auftaucht.
+- Auf der WLED-Edit-Seite wird die aktive URL jetzt aus den bekannten Alias-Adressen ausgewaehlt und wieder ins normale `url`-Feld geschrieben.
 
 ## Schnelle Live-Checks
 

@@ -316,7 +316,22 @@ class ItemController extends Controller
             ]);
         }
 
-        $config = Item::checkConfig($request->input('config'));
+        $wledSelectedUrl = trim((string) $request->input('wled_selected_url', ''));
+        $configInput = $request->input('config');
+
+        if ($wledSelectedUrl !== '') {
+            $request->merge([
+                'url' => $wledSelectedUrl,
+            ]);
+
+            if (! is_array($configInput)) {
+                $configInput = [];
+            }
+
+            $configInput['wled_preferred_url'] = $wledSelectedUrl;
+        }
+
+        $config = Item::checkConfig($configInput);
 
         // Don't overwrite the stored password if it wasn't submitted when updating the item
         if ($id !== null && strpos($config, '"password":null') !== false) {

@@ -92,12 +92,15 @@ This fork also carries a private `VenusOS` enhanced app for local Victron/Venus 
 
 This fork also carries a cached multi-source auto-discovery flow on the dashboard:
 
-- the dashboard checks in the background for new `WLED` and `ESPresense` devices that are not already present in the item list by matching URL host/IP
+- the dashboard checks in the background for new `WLED` and `ESPresense` devices that are not already present in the item list
 - the `+` button sits directly next to the search field and only appears when unmatched discovery candidates exist
 - clicking `+` opens prepared discovery tiles directly below the search field
 - clicking a discovery card opens the device itself
 - clicking `Hinzufuegen` creates a normal Heimdall item
 - WLED candidates prefer the configured `mDNS` identifier from `/json/cfg` as the suggested title
+- WLED candidates are deduplicated by device identity (`mac`), so `.local`, WLAN IP, and LAN IP variants of the same controller collapse into one device
+- already-known WLED items are suppressed even when Heimdall currently stores them under a friendly hostname like `wled-buero.local`
+- WLED items store discovered alias addresses in the item config so the edit page can offer a concrete active URL selection
 - ESPresense candidates prefer the configured `room` value from `/json/info` as the suggested title
 - discovery is intentionally cache-backed, chunked, and tab-visibility-aware so it does not keep hammering the LAN while the dashboard is hidden
 

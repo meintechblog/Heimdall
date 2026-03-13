@@ -75,6 +75,8 @@ use Symfony\Component\ClassLoader\ClassMapGenerator;
 // @codingStandardsIgnoreEnd
 class Item extends Model
 {
+    public const WLED_APP_ID = 'ac894a3a9399f135f6eb87f27fb742c71189cc86';
+
     use SoftDeletes;
 
     use HasFactory;
@@ -354,6 +356,66 @@ class Item extends Model
         }
 
         return $config;
+    }
+
+    public function wledIdentity(): array
+    {
+        $config = json_decode($this->description ?? '{}', true);
+        $identity = data_get($config, 'wled_identity', []);
+
+        return is_array($identity) ? $identity : [];
+    }
+
+    public function wledAliases(): array
+    {
+        $aliases = data_get($this->wledIdentity(), 'aliases', []);
+
+        if (! is_array($aliases)) {
+            $aliases = [];
+        }
+
+        $host = parse_url($this->url, PHP_URL_HOST);
+
+        if (is_string($host) && trim($host) !== '') {
+            $aliases[] = strtolower(trim($host));
+        }
+
+        $aliases = array_values(array_unique(array_filter(array_map(static function ($alias) {
+            return is_string($alias) && trim($alias) !== ''
+                ? strtolower(trim($alias))
+                : null;
+        }, $aliases))));
+
+        sort($aliases);
+
+        return $aliases;
+    }
+
+    public function wledPreferredUrl(): ?string
+    {
+        $config = json_decode($this->description ?? '{}', true);
+        $preferred = data_get($config, 'wled_preferred_url');
+
+        if (is_string($preferred) && trim($preferred) !== '') {
+            return trim($preferred);
+        }
+
+        return is_string($this->url) && trim($this->url) !== '' ? trim($this->url) : null;
+    }
+
+    public function supportsWledAddressSelection(): bool
+    {
+        if ($this->appid === self::WLED_APP_ID) {
+            return true;
+        }
+
+        if ($this->wledIdentity() !== []) {
+            return true;
+        }
+
+        $host = parse_url($this->url ?? '', PHP_URL_HOST);
+
+        return is_string($host) && str_starts_with(strtolower($host), 'wled');
     }
 
     /**

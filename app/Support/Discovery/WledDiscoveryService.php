@@ -27,7 +27,7 @@ class WledDiscoveryService
 
     public function candidates(): array
     {
-        return $this->filterExistingHosts($this->cachedCandidates());
+        return $this->cachedCandidates();
     }
 
     public function createItemFromCandidate(string $candidateId): array
@@ -54,6 +54,10 @@ class WledDiscoveryService
 
         $currentUser = User::currentUser();
         $application = Application::single(self::APP_ID);
+        $config = [
+            'wled_identity' => $candidate['identity'] ?? [],
+            'wled_preferred_url' => $candidate['url'],
+        ];
         $item = Item::create([
             'title' => $candidate['title'],
             'url' => $candidate['url'],
@@ -65,6 +69,7 @@ class WledDiscoveryService
             'class' => $application ? Application::classFromName($application->name) : null,
             'user_id' => $currentUser->getId(),
             'appid' => self::APP_ID,
+            'description' => json_encode($config),
         ]);
 
         $tagId = (int) ($candidate['tagId'] ?? $this->targetTagId());
@@ -111,13 +116,13 @@ class WledDiscoveryService
 
     protected function scanCandidates(): array
     {
-        $hosts = array_values(array_diff($this->candidateHosts(), $this->existingHosts()));
+        $hosts = $this->candidateHosts();
 
         if ($hosts === []) {
             return [];
         }
 
-        $candidates = [];
+        $candidateMap = [];
         $icon = $this->ensureIconPath();
         $tagId = $this->targetTagId();
 
@@ -127,18 +132,25 @@ class WledDiscoveryService
 
                 foreach ($chunk as $host) {
                     $requests[] = $pool
-                        ->as($host)
+                        ->as($host.':info')
                         ->timeout((float) config('app.discovery.wled.timeout_seconds', 0.8))
                         ->connectTimeout((float) config('app.discovery.wled.connect_timeout_seconds', 0.4))
                         ->acceptJson()
                         ->get("http://{$host}/json/info");
+                    $requests[] = $pool
+                        ->as($host.':cfg')
+                        ->timeout((float) config('app.discovery.wled.timeout_seconds', 0.8))
+                        ->connectTimeout((float) config('app.discovery.wled.connect_timeout_seconds', 0.4))
+                        ->acceptJson()
+                        ->get("http://{$host}/json/cfg");
                 }
 
                 return $requests;
             });
 
             foreach ($chunk as $host) {
-                $response = $responses[$host] ?? null;
+                $response = $responses[$host.':info'] ?? null;
+                $configResponse = $responses[$host.':cfg'] ?? null;
 
                 if (! $response instanceof Response || ! $response->successful()) {
                     continue;
@@ -154,25 +166,62 @@ class WledDiscoveryService
                     continue;
                 }
 
-                $url = "http://{$host}";
-                $title = $this->candidateTitle($host, $payload);
+                $configPayload = ($configResponse instanceof Response && $configResponse->successful())
+                    ? $configResponse->json()
+                    : [];
+
+                if (! is_array($configPayload)) {
+                    $configPayload = [];
+                }
+
+                $identity = $this->identityForHost($host, $payload, $configPayload);
+                $candidateKey = $this->candidateKey($identity, $host);
+                $url = $this->preferredUrlForIdentity($identity);
+                $title = $this->candidateTitle($payload, $identity);
                 $version = trim((string) ($payload['ver'] ?? ''));
 
-                $candidates[] = [
-                    'id' => sha1($url),
-                    'source' => 'wled',
-                    'sourceLabel' => $this->label(),
-                    'title' => $title !== '' ? $title : "WLED {$host}",
-                    'subtitle' => $version !== '' ? "WLED {$version}" : 'WLED',
-                    'url' => $url,
-                    'host' => $host,
-                    'appId' => self::APP_ID,
-                    'icon' => $icon,
-                    'iconUrl' => $this->iconUrl($icon),
-                    'tagId' => $tagId,
-                    'colour' => self::DEFAULT_COLOUR,
-                ];
+                if (! isset($candidateMap[$candidateKey])) {
+                    $candidateMap[$candidateKey] = [
+                        'id' => sha1('wled:'.$candidateKey),
+                        'source' => 'wled',
+                        'sourceLabel' => $this->label(),
+                        'title' => $title !== '' ? $title : "WLED {$host}",
+                        'subtitle' => $version !== '' ? "WLED {$version}" : 'WLED',
+                        'url' => $url,
+                        'host' => $host,
+                        'appId' => self::APP_ID,
+                        'icon' => $icon,
+                        'iconUrl' => $this->iconUrl($icon),
+                        'tagId' => $tagId,
+                        'colour' => self::DEFAULT_COLOUR,
+                        'identity' => $identity,
+                    ];
+
+                    continue;
+                }
+
+                $candidateMap[$candidateKey]['host'] = $candidateMap[$candidateKey]['identity']['aliases'][0] ?? $candidateMap[$candidateKey]['host'];
+                $candidateMap[$candidateKey]['identity'] = $this->mergeIdentity(
+                    $candidateMap[$candidateKey]['identity'],
+                    $identity
+                );
+                $candidateMap[$candidateKey]['url'] = $this->preferredUrlForIdentity($candidateMap[$candidateKey]['identity']);
             }
+        }
+
+        $candidates = [];
+
+        foreach (array_values($candidateMap) as $candidate) {
+            $existingItem = $this->existingItemForIdentity($candidate['identity']);
+
+            if ($existingItem) {
+                $this->syncIdentityMetadata($existingItem, $candidate['identity']);
+                continue;
+            }
+
+            $candidate['host'] = $candidate['identity']['aliases'][0] ?? $candidate['host'];
+            $candidate['url'] = $this->preferredUrlForIdentity($candidate['identity']);
+            $candidates[] = $candidate;
         }
 
         usort($candidates, static function (array $left, array $right): int {
@@ -191,9 +240,9 @@ class WledDiscoveryService
         return isset($payload['ver']) || isset($payload['vid']) || isset($payload['leds']) || isset($payload['fxcount']);
     }
 
-    protected function candidateTitle(string $host, array $payload): string
+    protected function candidateTitle(array $payload, array $identity): string
     {
-        $mdnsName = $this->mdnsName($host);
+        $mdnsName = trim((string) ($identity['mdns'] ?? ''));
 
         if ($mdnsName !== '') {
             return $mdnsName;
@@ -201,31 +250,43 @@ class WledDiscoveryService
 
         $title = trim((string) ($payload['name'] ?? ''));
 
-        return $title !== '' ? $title : "WLED {$host}";
+        return $title !== '' ? $title : 'WLED';
     }
 
-    protected function mdnsName(string $host): string
+    protected function identityForHost(string $host, array $payload, array $configPayload): array
     {
-        try {
-            $response = Http::timeout((float) config('app.discovery.wled.timeout_seconds', 0.8))
-                ->connectTimeout((float) config('app.discovery.wled.connect_timeout_seconds', 0.4))
-                ->acceptJson()
-                ->get("http://{$host}/json/cfg");
-        } catch (\Throwable) {
-            return '';
+        $mac = $this->normalizeMac((string) ($payload['mac'] ?? ''));
+        $mdns = strtolower(trim((string) data_get($configPayload, 'id.mdns', '')));
+        $aliases = [$host];
+
+        $reportedIp = trim((string) ($payload['ip'] ?? ''));
+
+        if ($reportedIp !== '') {
+            $aliases[] = $reportedIp;
         }
 
-        if (! $response->successful()) {
-            return '';
+        if ($mdns !== '') {
+            $aliases[] = $mdns;
+            $aliases[] = $mdns.'.local';
         }
 
-        $payload = $response->json();
+        foreach ((array) data_get($configPayload, 'nw.ins', []) as $networkInterface) {
+            $ipAddress = data_get($networkInterface, 'ip');
 
-        if (! is_array($payload)) {
-            return '';
+            if (! is_array($ipAddress) || count($ipAddress) !== 4) {
+                continue;
+            }
+
+            $aliases[] = implode('.', array_map('intval', $ipAddress));
         }
 
-        return trim((string) data_get($payload, 'id.mdns', ''));
+        $normalizedAliases = $this->normalizeAliases($aliases);
+
+        return [
+            'mac' => $mac,
+            'mdns' => $mdns,
+            'aliases' => $normalizedAliases,
+        ];
     }
 
     protected function candidateHosts(): array
@@ -307,6 +368,117 @@ class WledDiscoveryService
             });
     }
 
+    protected function existingItemForIdentity(array $identity): ?Item
+    {
+        return Item::query()
+            ->where('type', 0)
+            ->get()
+            ->first(function (Item $item) use ($identity): bool {
+                return $this->itemMatchesIdentity($item, $identity);
+            });
+    }
+
+    protected function itemMatchesIdentity(Item $item, array $identity): bool
+    {
+        $storedIdentity = $this->itemIdentity($item);
+        $candidateMac = $this->normalizeMac((string) ($identity['mac'] ?? ''));
+        $storedMac = $this->normalizeMac((string) ($storedIdentity['mac'] ?? ''));
+
+        if ($candidateMac !== '' && $storedMac !== '' && $candidateMac === $storedMac) {
+            return true;
+        }
+
+        $candidateAliases = $this->normalizeAliases((array) ($identity['aliases'] ?? []));
+        $storedAliases = $this->normalizeAliases(array_merge(
+            [$this->extractHost($item->url)],
+            (array) ($storedIdentity['aliases'] ?? [])
+        ));
+
+        return array_intersect($candidateAliases, $storedAliases) !== [];
+    }
+
+    protected function itemIdentity(Item $item): array
+    {
+        $config = json_decode($item->description ?? '{}', true);
+        $identity = data_get($config, 'wled_identity', []);
+
+        return is_array($identity) ? $identity : [];
+    }
+
+    protected function syncIdentityMetadata(Item $item, array $identity): void
+    {
+        $description = json_decode($item->description ?? '{}', true);
+
+        if (! is_array($description)) {
+            $description = [];
+        }
+
+        $mergedIdentity = $this->mergeIdentity(
+            $this->itemIdentity($item),
+            $identity
+        );
+
+        $description['wled_identity'] = $mergedIdentity;
+        $description['wled_preferred_url'] = $description['wled_preferred_url']
+            ?? $this->preferredUrlForIdentity($mergedIdentity);
+
+        $item->forceFill([
+            'description' => json_encode($description),
+            'appid' => $item->appid ?: self::APP_ID,
+        ])->save();
+    }
+
+    protected function mergeIdentity(array $left, array $right): array
+    {
+        $mac = $this->normalizeMac((string) ($left['mac'] ?? ''));
+
+        if ($mac === '') {
+            $mac = $this->normalizeMac((string) ($right['mac'] ?? ''));
+        }
+
+        $mdns = trim((string) ($left['mdns'] ?? ''));
+
+        if ($mdns === '') {
+            $mdns = trim((string) ($right['mdns'] ?? ''));
+        }
+
+        return [
+            'mac' => $mac,
+            'mdns' => strtolower($mdns),
+            'aliases' => $this->normalizeAliases(array_merge(
+                (array) ($left['aliases'] ?? []),
+                (array) ($right['aliases'] ?? [])
+            )),
+        ];
+    }
+
+    protected function preferredUrlForIdentity(array $identity): string
+    {
+        $aliases = $this->normalizeAliases((array) ($identity['aliases'] ?? []));
+        $mdns = trim((string) ($identity['mdns'] ?? ''));
+
+        if ($mdns !== '') {
+            return 'http://'.$mdns.'.local';
+        }
+
+        $host = $aliases[0] ?? 'localhost';
+
+        return 'http://'.$host;
+    }
+
+    protected function candidateKey(array $identity, string $host): string
+    {
+        if (($identity['mac'] ?? '') !== '') {
+            return 'mac:'.$identity['mac'];
+        }
+
+        if (($identity['mdns'] ?? '') !== '') {
+            return 'mdns:'.$identity['mdns'];
+        }
+
+        return 'host:'.$host;
+    }
+
     protected function forgetCandidate(string $candidateId): void
     {
         $remainingCandidates = array_values(array_filter($this->cachedCandidates(), static function (array $candidate) use ($candidateId): bool {
@@ -334,21 +506,23 @@ class WledDiscoveryService
     {
         $iconPath = 'icons/wled.png';
 
-        if (Storage::disk('public')->exists($iconPath)) {
+        if ($this->hasValidIcon($iconPath)) {
             return $iconPath;
         }
 
-        try {
-            $application = Application::getApp(self::APP_ID);
+        $remoteIcon = rtrim((string) config('app.appsource'), '/').'/icons/wled.png';
 
-            if ($application && method_exists($application, 'icon')) {
-                return $application->icon();
+        try {
+            $response = Http::timeout(5)->connectTimeout(2)->get($remoteIcon);
+
+            if ($response->successful()) {
+                Storage::disk('public')->put($iconPath, $response->body());
             }
         } catch (\Throwable) {
-            return null;
+            // Fall back to the default icon below.
         }
 
-        return Storage::disk('public')->exists($iconPath) ? $iconPath : null;
+        return $this->hasValidIcon($iconPath) ? $iconPath : null;
     }
 
     protected function iconUrl(?string $iconPath): string
@@ -406,5 +580,42 @@ class WledDiscoveryService
     protected function normalizeHost(string $host): string
     {
         return strtolower(trim($host));
+    }
+
+    protected function normalizeAliases(array $aliases): array
+    {
+        $normalized = array_values(array_unique(array_filter(array_map(function ($alias) {
+            if (! is_string($alias) || trim($alias) === '') {
+                return null;
+            }
+
+            $parsedHost = parse_url($alias, PHP_URL_HOST);
+
+            if (is_string($parsedHost) && $parsedHost !== '') {
+                return $this->normalizeHost($parsedHost);
+            }
+
+            return $this->normalizeHost($alias);
+        }, $aliases))));
+
+        sort($normalized);
+
+        return $normalized;
+    }
+
+    protected function normalizeMac(string $mac): string
+    {
+        return strtolower(str_replace([':', '-'], '', trim($mac)));
+    }
+
+    protected function hasValidIcon(string $iconPath): bool
+    {
+        if (! Storage::disk('public')->exists($iconPath)) {
+            return false;
+        }
+
+        $contents = Storage::disk('public')->get($iconPath);
+
+        return $contents !== '' && str_starts_with($contents, "\x89PNG");
     }
 }

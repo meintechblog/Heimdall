@@ -73,6 +73,10 @@
                 <small class="help">Don't forget http(s)://</small>
             </div>
 
+            @if(isset($item) && $item->supportsWledAddressSelection())
+            @include('items.partials.wled-network-config', ['item' => $item])
+            @endif
+
             <div class="input">
                 <label>{{ __('app.apps.tags') }} ({{ __('app.optional') }})</label>
                 {{ html()->multiselect('tags[]', $tags, $current_tags)->class('tags') }}
@@ -155,5 +159,4 @@
         @endif
 
     </section>
-
 

@@ -254,13 +254,8 @@ function initHeimdallDiscoveryPanel(options = {}) {
       return;
     }
 
-    if (win && win.location && typeof win.location.assign === "function") {
-      win.location.assign(url);
-      return;
-    }
-
     if (win && typeof win.open === "function") {
-      win.open(url, "_self");
+      win.open(url, "_blank");
     }
   }
 

@@ -159,7 +159,7 @@ test("opens a prepared discovery card without triggering add", async () => {
   createDiscoveryDom();
 
   const fetchCalls = [];
-  const assigns = [];
+  const opens = [];
   const fetchMock = async (url) => {
     fetchCalls.push(url);
 
@@ -200,10 +200,8 @@ test("opens a prepared discovery card without triggering add", async () => {
   const discovery = initDiscoveryPanel({
     document,
     window: {
-      location: {
-        assign(url) {
-          assigns.push(url);
-        },
+      open(url, target) {
+        opens.push([url, target]);
       },
     },
     fetch: fetchMock,
@@ -223,7 +221,7 @@ test("opens a prepared discovery card without triggering add", async () => {
       new window.MouseEvent("click", { bubbles: true, cancelable: true })
     );
 
-  assert.deepEqual(assigns, ["http://192.168.3.64"]);
+  assert.deepEqual(opens, [["http://192.168.3.64", "_blank"]]);
   assert.deepEqual(fetchCalls, [
     "/discoveries/summary",
     "/discoveries/candidates",

@@ -9,32 +9,42 @@ function createDiscoveryDom() {
     `<!doctype html>
     <html>
       <body>
-        <section
-          id="discovery-hub"
-          class="discovery-hub"
-          data-summary-url="/discoveries/summary"
-          data-candidates-url="/discoveries/candidates"
-          data-add-url="/discoveries/items"
-        >
-          <div class="discovery-toolbar">
-            <button
-              type="button"
-              id="discovery-toggle"
-              class="discovery-toggle is-hidden"
-              aria-expanded="false"
+        <div class="search-discovery-shell">
+          <div class="search-discovery-row">
+            <div class="searchform">
+              <form action="https://www.google.com/search" target="_blank" method="get">
+                <div id="search-container" class="input-container">
+                  <input type="text" class="homesearch" />
+                  <button type="submit">Suche</button>
+                </div>
+              </form>
+            </div>
+            <section
+              id="discovery-hub"
+              class="discovery-hub"
+              data-summary-url="/discoveries/summary"
+              data-candidates-url="/discoveries/candidates"
+              data-add-url="/discoveries/items"
             >
-              <span class="discovery-toggle-count" data-role="count"></span>
-              <span class="discovery-toggle-icon" data-role="icon">+</span>
-            </button>
+              <button
+                type="button"
+                id="discovery-toggle"
+                class="discovery-toggle is-hidden"
+                aria-expanded="false"
+              >
+                <span class="discovery-toggle-count" data-role="count"></span>
+                <span class="discovery-toggle-icon" data-role="icon">+</span>
+              </button>
+            </section>
           </div>
           <div class="discovery-panel is-hidden" data-role="panel">
             <div class="discovery-candidate-list" data-role="candidates"></div>
-            <div class="discovery-panel-state" data-role="state"></div>
+            <div class="discovery-panel-state is-hidden" data-role="state"></div>
           </div>
-        </section>
+        </div>
       </body>
     </html>`,
-    { url: "http://localhost" }
+    { url: "http://192.168.3.88" }
   );
 
   global.window = dom.window;
@@ -48,10 +58,108 @@ function flush() {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-test("shows the plus button after discovery finds new devices and renders candidates on open", async () => {
+test("shows the plus button and renders separate open and add actions", async () => {
   createDiscoveryDom();
 
   const fetchCalls = [];
+  const fetchMock = async (url) => {
+    fetchCalls.push(url);
+
+    if (url === "/discoveries/summary") {
+      return {
+        ok: true,
+        json: async () => ({
+          totalCount: 2,
+          sources: [
+            { key: "wled", label: "WLED", count: 1 },
+            { key: "espresense", label: "ESPresense", count: 1 },
+          ],
+        }),
+      };
+    }
+
+    if (url === "/discoveries/candidates") {
+      return {
+        ok: true,
+        json: async () => ({
+          totalCount: 2,
+          candidates: [
+            {
+              id: "candidate-1",
+              source: "wled",
+              sourceLabel: "WLED",
+              title: "wled-buero2",
+              subtitle: "192.168.3.64 · WLED 0.14.1",
+              host: "192.168.3.64",
+              url: "http://192.168.3.64",
+              iconUrl: "/storage/icons/wled.png",
+            },
+            {
+              id: "candidate-2",
+              source: "espresense",
+              sourceLabel: "ESPresense",
+              title: "Kueche",
+              subtitle: "192.168.3.239 · Raum",
+              host: "192.168.3.239",
+              url: "http://192.168.3.239",
+              iconUrl: "/storage/icons/espresense.svg",
+            },
+          ],
+        }),
+      };
+    }
+
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+
+  const discovery = initDiscoveryPanel({
+    document,
+    window,
+    fetch: fetchMock,
+    scheduleInterval: () => 1,
+    autoStart: false,
+  });
+
+  await discovery.refreshSummary();
+
+  const toggle = document.getElementById("discovery-toggle");
+  assert.equal(toggle.classList.contains("is-hidden"), false);
+  assert.equal(toggle.closest(".search-discovery-row") !== null, true);
+
+  toggle.dispatchEvent(
+    new window.MouseEvent("click", { bubbles: true, cancelable: true })
+  );
+  await flush();
+
+  assert.equal(toggle.getAttribute("aria-expanded"), "true");
+  assert.equal(document.querySelector('[data-role="icon"]').textContent, "-");
+  assert.match(
+    document.querySelector('[data-role="candidates"]').textContent,
+    /wled-buero2/
+  );
+  assert.match(
+    document.querySelector('[data-role="candidates"]').textContent,
+    /Kueche/
+  );
+  assert.equal(
+    document.querySelectorAll(".discovery-candidate-open").length,
+    2
+  );
+  assert.equal(
+    document.querySelectorAll(".discovery-candidate-add").length,
+    2
+  );
+  assert.deepEqual(fetchCalls, [
+    "/discoveries/summary",
+    "/discoveries/candidates",
+  ]);
+});
+
+test("opens a prepared discovery card without triggering add", async () => {
+  createDiscoveryDom();
+
+  const fetchCalls = [];
+  const assigns = [];
   const fetchMock = async (url) => {
     fetchCalls.push(url);
 
@@ -75,10 +183,10 @@ test("shows the plus button after discovery finds new devices and renders candid
               id: "candidate-1",
               source: "wled",
               sourceLabel: "WLED",
-              title: "Hall Strip",
-              subtitle: "WLED 0.14.4",
-              host: "192.168.3.60",
-              url: "http://192.168.3.60",
+              title: "wled-buero2",
+              subtitle: "192.168.3.64 · WLED 0.14.1",
+              host: "192.168.3.64",
+              url: "http://192.168.3.64",
               iconUrl: "/storage/icons/wled.png",
             },
           ],
@@ -91,41 +199,38 @@ test("shows the plus button after discovery finds new devices and renders candid
 
   const discovery = initDiscoveryPanel({
     document,
-    window,
+    window: {
+      location: {
+        assign(url) {
+          assigns.push(url);
+        },
+      },
+    },
     fetch: fetchMock,
     scheduleInterval: () => 1,
     autoStart: false,
   });
 
   await discovery.refreshSummary();
-
-  const toggle = document.getElementById("discovery-toggle");
-
-  assert.equal(toggle.classList.contains("is-hidden"), false);
-  assert.equal(
-    document.querySelector('[data-role="count"]').textContent.trim(),
-    "1"
-  );
-  assert.equal(toggle.getAttribute("aria-expanded"), "false");
-
-  toggle.dispatchEvent(
+  document.getElementById("discovery-toggle").dispatchEvent(
     new window.MouseEvent("click", { bubbles: true, cancelable: true })
   );
   await flush();
 
-  assert.equal(toggle.getAttribute("aria-expanded"), "true");
-  assert.equal(document.querySelector('[data-role="icon"]').textContent, "-");
-  assert.match(
-    document.querySelector('[data-role="candidates"]').textContent,
-    /Hall Strip/
-  );
+  document
+    .querySelector(".discovery-candidate-open")
+    .dispatchEvent(
+      new window.MouseEvent("click", { bubbles: true, cancelable: true })
+    );
+
+  assert.deepEqual(assigns, ["http://192.168.3.64"]);
   assert.deepEqual(fetchCalls, [
     "/discoveries/summary",
     "/discoveries/candidates",
   ]);
 });
 
-test("adds a prepared discovery tile as a normal item and reloads the dashboard", async () => {
+test("adds a prepared discovery tile as a normal item from the add button", async () => {
   createDiscoveryDom();
 
   const reloads = [];
@@ -150,10 +255,10 @@ test("adds a prepared discovery tile as a normal item and reloads the dashboard"
               id: "candidate-1",
               source: "wled",
               sourceLabel: "WLED",
-              title: "Hall Strip",
-              subtitle: "WLED 0.14.4",
-              host: "192.168.3.60",
-              url: "http://192.168.3.60",
+              title: "wled-buero2",
+              subtitle: "192.168.3.64 · WLED 0.14.1",
+              host: "192.168.3.64",
+              url: "http://192.168.3.64",
               iconUrl: "/storage/icons/wled.png",
             },
           ],
@@ -171,8 +276,8 @@ test("adds a prepared discovery tile as a normal item and reloads the dashboard"
           created: true,
           item: {
             id: 99,
-            title: "Hall Strip",
-            url: "http://192.168.3.60",
+            title: "wled-buero2",
+            url: "http://192.168.3.64",
           },
         }),
       };
@@ -203,7 +308,7 @@ test("adds a prepared discovery tile as a normal item and reloads the dashboard"
   await flush();
 
   document
-    .querySelector(".discovery-candidate")
+    .querySelector(".discovery-candidate-add")
     .dispatchEvent(
       new window.MouseEvent("click", { bubbles: true, cancelable: true })
     );

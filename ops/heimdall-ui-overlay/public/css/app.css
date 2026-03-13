@@ -251,16 +251,32 @@ body {
   visibility: hidden;
 }
 
-.discovery-hub {
-  margin: 0 auto 18px;
-  max-width: 840px;
+.search-discovery-shell {
+  width: 100%;
+  max-width: 860px;
+  margin: 50px auto 18px;
+  position: relative;
+  z-index: 4;
 }
 
-.discovery-toolbar {
+.search-discovery-row {
   display: flex;
-  justify-content: flex-end;
   align-items: center;
-  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.search-discovery-search {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.search-discovery-shell .searchform {
+  margin: 0;
+  max-width: none;
+}
+
+.discovery-hub {
+  flex: 0 0 auto;
 }
 
 .discovery-toggle {
@@ -311,6 +327,7 @@ body {
 }
 
 .discovery-panel {
+  margin-top: 12px;
   padding: 14px;
   border-radius: 16px;
   background: rgba(5, 9, 15, 0.48);
@@ -332,27 +349,20 @@ body {
 }
 
 .discovery-candidate-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 12px;
 }
 
 .discovery-candidate {
-  width: min(100%, 320px);
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
+  width: 100%;
 }
 
 .discovery-candidate-card {
   min-height: 94px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   width: 100%;
-  padding: 16px;
   border-radius: 14px;
   background: linear-gradient(90deg, rgba(53, 61, 71, 0.92) 0%, rgba(84, 92, 101, 0.92) 100%);
   color: #ffffff;
@@ -365,12 +375,21 @@ body {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
-.discovery-candidate:disabled {
-  cursor: progress;
+.discovery-candidate.is-adding .discovery-candidate-card {
+  opacity: 0.85;
 }
 
-.discovery-candidate:disabled .discovery-candidate-card {
-  opacity: 0.85;
+.discovery-candidate-open {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 16px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .discovery-candidate-details {
@@ -400,16 +419,27 @@ body {
   color: rgba(255, 255, 255, 0.76);
 }
 
-.discovery-candidate-action {
-  margin-left: 12px;
-  padding: 9px 12px;
+.discovery-candidate-add {
+  margin: 0 16px 0 12px;
+  padding: 10px 14px;
+  border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.18s ease, opacity 0.18s ease;
+}
+.discovery-candidate-add:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+.discovery-candidate-add:disabled {
+  cursor: progress;
+  opacity: 0.75;
 }
 
 .discovery-candidate.is-adding .tile-icon-loading-overlay {
@@ -1733,24 +1763,30 @@ select:-webkit-autofill:focus {
 }
 
 @media (max-width: 700px) {
-  .discovery-hub {
-    margin-bottom: 14px;
+  .search-discovery-shell {
+    margin: 28px auto 16px;
   }
-  .discovery-toolbar {
-    justify-content: center;
+  .search-discovery-row {
+    align-items: stretch;
+    flex-direction: column;
   }
   .discovery-toggle {
     width: 54px;
     height: 54px;
+    align-self: center;
   }
   .discovery-candidate {
     width: 100%;
   }
   .discovery-candidate-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .discovery-candidate-open {
     padding: 14px;
   }
-  .discovery-candidate-action {
-    display: none;
+  .discovery-candidate-add {
+    margin: 0 14px 14px;
   }
 }
 .import-status {

@@ -4167,7 +4167,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
 });
 function renderCandidateMarkup(candidate) {
   var subtitle = [candidate.host, candidate.subtitle].filter(Boolean).join(" · ");
-  return "\n    <button\n      type=\"button\"\n      class=\"discovery-candidate\"\n      data-candidate-id=\"".concat(candidate.id, "\"\n      data-source=\"").concat(candidate.source, "\"\n      aria-label=\"").concat(candidate.title, " hinzufuegen\"\n    >\n      <span class=\"discovery-candidate-card\">\n        <span class=\"app-icon-container\">\n          <img class=\"app-icon\" src=\"").concat(candidate.iconUrl, "\" alt=\"").concat(candidate.sourceLabel, "\" />\n          <span class=\"tile-icon-loading-overlay is-hidden\" aria-hidden=\"true\">\n            <span class=\"tile-icon-loading-visual\">\n              <span class=\"tile-icon-loading-spinner tile-icon-loading-spinner-ring\" aria-hidden=\"true\"></span>\n            </span>\n          </span>\n        </span>\n        <span class=\"discovery-candidate-details\">\n          <span class=\"discovery-candidate-source\">").concat(candidate.sourceLabel, "</span>\n          <span class=\"discovery-candidate-title\">").concat(candidate.title, "</span>\n          <span class=\"discovery-candidate-meta\">").concat(subtitle, "</span>\n        </span>\n        <span class=\"discovery-candidate-action\">Hinzufuegen</span>\n      </span>\n    </button>\n  ");
+  return "\n    <article\n      class=\"discovery-candidate\"\n      data-candidate-id=\"".concat(candidate.id, "\"\n      data-source=\"").concat(candidate.source, "\"\n      data-url=\"").concat(candidate.url, "\"\n    >\n      <span class=\"discovery-candidate-card\">\n        <button\n          type=\"button\"\n          class=\"discovery-candidate-open\"\n          aria-label=\"").concat(candidate.title, " oeffnen\"\n        >\n          <span class=\"app-icon-container\">\n            <img class=\"app-icon\" src=\"").concat(candidate.iconUrl, "\" alt=\"").concat(candidate.sourceLabel, "\" />\n            <span class=\"tile-icon-loading-overlay is-hidden\" aria-hidden=\"true\">\n              <span class=\"tile-icon-loading-visual\">\n                <span class=\"tile-icon-loading-spinner tile-icon-loading-spinner-ring\" aria-hidden=\"true\"></span>\n              </span>\n            </span>\n          </span>\n          <span class=\"discovery-candidate-details\">\n            <span class=\"discovery-candidate-source\">").concat(candidate.sourceLabel, "</span>\n            <span class=\"discovery-candidate-title\">").concat(candidate.title, "</span>\n            <span class=\"discovery-candidate-meta\">").concat(subtitle, "</span>\n          </span>\n        </button>\n        <button\n          type=\"button\"\n          class=\"discovery-candidate-add\"\n          aria-label=\"").concat(candidate.title, " hinzufuegen\"\n        >\n          Hinzufuegen\n        </button>\n      </span>\n    </article>\n  ");
 }
 function initHeimdallDiscoveryPanel() {
   var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -4183,6 +4183,7 @@ function initHeimdallDiscoveryPanel() {
   if (!hub) {
     return null;
   }
+  var shell = hub.closest(".search-discovery-shell") || hub.parentElement;
   var summaryUrl = hub.getAttribute("data-summary-url");
   var candidatesUrl = hub.getAttribute("data-candidates-url");
   var addUrl = hub.getAttribute("data-add-url");
@@ -4190,9 +4191,12 @@ function initHeimdallDiscoveryPanel() {
   var toggle = hub.querySelector("#discovery-toggle");
   var countLabel = hub.querySelector('[data-role="count"]');
   var iconLabel = hub.querySelector('[data-role="icon"]');
-  var panel = hub.querySelector('[data-role="panel"]');
-  var state = hub.querySelector('[data-role="state"]');
-  var candidatesContainer = hub.querySelector('[data-role="candidates"]');
+  var panel = shell ? shell.querySelector('[data-role="panel"]') : null;
+  var state = shell ? shell.querySelector('[data-role="state"]') : null;
+  var candidatesContainer = shell ? shell.querySelector('[data-role="candidates"]') : null;
+  if (!toggle || !countLabel || !iconLabel || !panel || !state || !candidatesContainer) {
+    return null;
+  }
   function setState() {
     var message = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "";
     var hidden = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
@@ -4259,7 +4263,7 @@ function initHeimdallDiscoveryPanel() {
       return _regenerator().w(function (_context3) {
         while (1) switch (_context3.n) {
           case 0:
-            setState("Suche nach neuen WLED-Geraeten ...");
+            setState("Suche nach neuen Services ...");
             _context3.n = 1;
             return fetchImpl(candidatesUrl, {
               headers: {
@@ -4297,22 +4301,25 @@ function initHeimdallDiscoveryPanel() {
   }
   function _addCandidate() {
     _addCandidate = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4(button) {
-      var candidateButton, overlay, response, _t3;
+      var candidateButton, overlay, addAction, response, _t3;
       return _regenerator().w(function (_context4) {
         while (1) switch (_context4.p = _context4.n) {
           case 0:
             candidateButton = button;
-            if (!candidateButton.disabled) {
+            if (!candidateButton.classList.contains("is-adding")) {
               _context4.n = 1;
               break;
             }
             return _context4.a(2);
           case 1:
-            candidateButton.disabled = true;
             candidateButton.classList.add("is-adding");
             overlay = candidateButton.querySelector(".tile-icon-loading-overlay");
+            addAction = candidateButton.querySelector(".discovery-candidate-add");
             if (overlay) {
               overlay.classList.remove("is-hidden");
+            }
+            if (addAction) {
+              addAction.disabled = true;
             }
             _context4.p = 2;
             _context4.n = 3;
@@ -4347,10 +4354,12 @@ function initHeimdallDiscoveryPanel() {
             _context4.p = 6;
             _t3 = _context4.v;
             setState("Der Eintrag konnte gerade nicht uebernommen werden.");
-            candidateButton.disabled = false;
             candidateButton.classList.remove("is-adding");
             if (overlay) {
               overlay.classList.add("is-hidden");
+            }
+            if (addAction) {
+              addAction.disabled = false;
             }
             throw _t3;
           case 7:
@@ -4359,6 +4368,19 @@ function initHeimdallDiscoveryPanel() {
       }, _callee4, null, [[2, 6]]);
     }));
     return _addCandidate.apply(this, arguments);
+  }
+  function openCandidate(candidateElement) {
+    var url = candidateElement.getAttribute("data-url");
+    if (!url) {
+      return;
+    }
+    if (win && win.location && typeof win.location.assign === "function") {
+      win.location.assign(url);
+      return;
+    }
+    if (win && typeof win.open === "function") {
+      win.open(url, "_self");
+    }
   }
   toggle.addEventListener("click", /*#__PURE__*/function () {
     var _ref = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(event) {
@@ -4391,13 +4413,27 @@ function initHeimdallDiscoveryPanel() {
       return _ref.apply(this, arguments);
     };
   }());
-  hub.addEventListener("click", function (event) {
-    var button = event.target.closest(".discovery-candidate");
-    if (!button) {
+  shell.addEventListener("click", function (event) {
+    var addButton = event.target.closest(".discovery-candidate-add");
+    if (addButton) {
+      var _candidate = addButton.closest(".discovery-candidate");
+      if (!_candidate) {
+        return;
+      }
+      event.preventDefault();
+      addCandidate(_candidate)["catch"](function () {});
+      return;
+    }
+    var openButton = event.target.closest(".discovery-candidate-open");
+    if (!openButton) {
+      return;
+    }
+    var candidate = openButton.closest(".discovery-candidate");
+    if (!candidate || candidate.classList.contains("is-adding")) {
       return;
     }
     event.preventDefault();
-    addCandidate(button)["catch"](function () {});
+    openCandidate(candidate);
   });
   doc.addEventListener("visibilitychange", function () {
     if (doc.hidden !== true) {

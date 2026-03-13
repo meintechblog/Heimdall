@@ -25,6 +25,16 @@ return [
             'connect_timeout_seconds' => (float) env('DISCOVERY_WLED_CONNECT_TIMEOUT_SECONDS', 0.4),
             'chunk_size' => (int) env('DISCOVERY_WLED_CHUNK_SIZE', 4),
         ],
+        'espresense' => [
+            'hosts' => array_values(array_filter(array_map(
+                static fn ($host) => trim($host),
+                explode(',', (string) env('DISCOVERY_ESPRESENSE_HOSTS', ''))
+            ))),
+            'cache_ttl_seconds' => (int) env('DISCOVERY_ESPRESENSE_CACHE_TTL_SECONDS', 900),
+            'timeout_seconds' => (float) env('DISCOVERY_ESPRESENSE_TIMEOUT_SECONDS', 0.8),
+            'connect_timeout_seconds' => (float) env('DISCOVERY_ESPRESENSE_CONNECT_TIMEOUT_SECONDS', 0.4),
+            'chunk_size' => (int) env('DISCOVERY_ESPRESENSE_CHUNK_SIZE', 4),
+        ],
     ],
 
     'aliases' => Facade::defaultAliases()->merge([

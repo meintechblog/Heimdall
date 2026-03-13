@@ -188,13 +188,17 @@ For the VenusOS tile customization, confirm:
 - `Grid` uses a green up-arrow for export and a red down-arrow for import
 - the live deploy re-registers the private `VenusOS` app type automatically
 
-For the WLED auto-discovery flow, confirm:
+For the dashboard discovery flow, confirm:
 
 - `GET /discoveries/summary` responds on the live instance
-- the dashboard only shows the `+` button when there really are WLED devices not already covered by existing item URLs
-- clicking `+` expands prepared WLED tiles above the search bar
-- clicking one prepared WLED tile creates a normal pinned Heimdall item in the `WLED` group
-- when no new WLED devices exist, the discovery button stays hidden
+- the dashboard only shows the `+` button when there really are unmatched `WLED` or `ESPresense` devices
+- the `+` button sits next to the search field
+- clicking `+` expands prepared discovery tiles directly below the search bar
+- clicking a discovery card opens the device itself
+- clicking `Hinzufuegen` creates a normal Heimdall item
+- WLED candidates prefer the configured `mDNS` name when available
+- ESPresense candidates prefer the configured `room` name when available
+- when no new discovery devices exist, the discovery button stays hidden
 
 For live operations, keep CT100 on a normal web stack (`nginx` + `php-fpm`) instead of `php artisan serve`. The built-in Laravel dev server is acceptable for quick local testing, but it is too fragile for live dashboard traffic and multiple parallel live-stat requests.
 

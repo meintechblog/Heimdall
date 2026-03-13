@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Discovery\EspresenseDiscoveryService;
 use App\Support\Discovery\WledDiscoveryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ class DiscoveryController extends Controller
 {
     protected const SOURCE_SERVICES = [
         'wled' => WledDiscoveryService::class,
+        'espresense' => EspresenseDiscoveryService::class,
     ];
 
     public function __construct()

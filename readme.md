@@ -90,17 +90,23 @@ This fork also carries a private `VenusOS` enhanced app for local Victron/Venus 
 - `Grid` uses a green up-arrow for export and a red down-arrow for import
 - power values stay in `W` below `1000 W` and switch to `kW` with one decimal place above that
 
-This fork also carries a cached WLED auto-discovery flow on the dashboard:
+This fork also carries a cached multi-source auto-discovery flow on the dashboard:
 
-- the dashboard checks in the background for new WLED devices that are not already present in the item list by matching URL host/IP
-- when new WLED devices are found, a prominent `+` button appears above the search bar
-- clicking `+` expands prepared WLED tiles; clicking one of those tiles creates a normal pinned Heimdall item in the `WLED` group
-- discovery is intentionally cache-backed and tab-visibility-aware so it does not keep hammering the LAN while the dashboard is hidden
+- the dashboard checks in the background for new `WLED` and `ESPresense` devices that are not already present in the item list by matching URL host/IP
+- the `+` button sits directly next to the search field and only appears when unmatched discovery candidates exist
+- clicking `+` opens prepared discovery tiles directly below the search field
+- clicking a discovery card opens the device itself
+- clicking `Hinzufuegen` creates a normal Heimdall item
+- WLED candidates prefer the configured `mDNS` identifier from `/json/cfg` as the suggested title
+- ESPresense candidates prefer the configured `room` value from `/json/info` as the suggested title
+- discovery is intentionally cache-backed, chunked, and tab-visibility-aware so it does not keep hammering the LAN while the dashboard is hidden
 
 Optional tuning for discovery:
 
 - `DISCOVERY_WLED_HOSTS=192.168.3.50,192.168.3.60` to limit scanning to known hosts instead of the whole local `/24`
+- `DISCOVERY_ESPRESENSE_HOSTS=192.168.3.239,192.168.3.240` to limit ESPresense scanning to known hosts instead of the whole local `/24`
 - `DISCOVERY_WLED_CACHE_TTL_SECONDS=900` to control how long WLED candidates stay cached
+- `DISCOVERY_ESPRESENSE_CACHE_TTL_SECONDS=900` to control how long ESPresense candidates stay cached
 - `DISCOVERY_SUMMARY_REFRESH_SECONDS=300` to control how often the dashboard rechecks the cached discovery summary
 
 Shared Heimdall tile design rules for the Hulki fork are documented in `docs/plans/2026-03-12-heimdall-tile-ci-design.md`. Use that as the baseline when adding new live-stat tile extensions so loading behavior, polling discipline, and icon-area feedback stay consistent.

@@ -67,7 +67,12 @@ class WledDiscoveryService
             'appid' => self::APP_ID,
         ]);
 
-        $item->parents()->sync([$candidate['tagId'] ?? $this->targetTagId()]);
+        $tagId = (int) ($candidate['tagId'] ?? $this->targetTagId());
+
+        if ($tagId > 0) {
+            $item->parents()->sync([$tagId]);
+        }
+
         $this->forgetCandidate($candidateId);
 
         return [
@@ -145,8 +150,12 @@ class WledDiscoveryService
                     continue;
                 }
 
+                if (! $this->isWledPayload($payload)) {
+                    continue;
+                }
+
                 $url = "http://{$host}";
-                $title = trim((string) ($payload['name'] ?? ''));
+                $title = $this->candidateTitle($host, $payload);
                 $version = trim((string) ($payload['ver'] ?? ''));
 
                 $candidates[] = [
@@ -171,6 +180,52 @@ class WledDiscoveryService
         });
 
         return $candidates;
+    }
+
+    protected function isWledPayload(array $payload): bool
+    {
+        if (isset($payload['room']) && ! isset($payload['ver']) && ! isset($payload['vid']) && ! isset($payload['leds'])) {
+            return false;
+        }
+
+        return isset($payload['ver']) || isset($payload['vid']) || isset($payload['leds']) || isset($payload['fxcount']);
+    }
+
+    protected function candidateTitle(string $host, array $payload): string
+    {
+        $mdnsName = $this->mdnsName($host);
+
+        if ($mdnsName !== '') {
+            return $mdnsName;
+        }
+
+        $title = trim((string) ($payload['name'] ?? ''));
+
+        return $title !== '' ? $title : "WLED {$host}";
+    }
+
+    protected function mdnsName(string $host): string
+    {
+        try {
+            $response = Http::timeout((float) config('app.discovery.wled.timeout_seconds', 0.8))
+                ->connectTimeout((float) config('app.discovery.wled.connect_timeout_seconds', 0.4))
+                ->acceptJson()
+                ->get("http://{$host}/json/cfg");
+        } catch (\Throwable) {
+            return '';
+        }
+
+        if (! $response->successful()) {
+            return '';
+        }
+
+        $payload = $response->json();
+
+        if (! is_array($payload)) {
+            return '';
+        }
+
+        return trim((string) data_get($payload, 'id.mdns', ''));
     }
 
     protected function candidateHosts(): array

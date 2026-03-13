@@ -4,30 +4,41 @@ function renderCandidateMarkup(candidate) {
     .join(" · ");
 
   return `
-    <button
-      type="button"
+    <article
       class="discovery-candidate"
       data-candidate-id="${candidate.id}"
       data-source="${candidate.source}"
-      aria-label="${candidate.title} hinzufuegen"
+      data-url="${candidate.url}"
     >
       <span class="discovery-candidate-card">
-        <span class="app-icon-container">
-          <img class="app-icon" src="${candidate.iconUrl}" alt="${candidate.sourceLabel}" />
-          <span class="tile-icon-loading-overlay is-hidden" aria-hidden="true">
-            <span class="tile-icon-loading-visual">
-              <span class="tile-icon-loading-spinner tile-icon-loading-spinner-ring" aria-hidden="true"></span>
+        <button
+          type="button"
+          class="discovery-candidate-open"
+          aria-label="${candidate.title} oeffnen"
+        >
+          <span class="app-icon-container">
+            <img class="app-icon" src="${candidate.iconUrl}" alt="${candidate.sourceLabel}" />
+            <span class="tile-icon-loading-overlay is-hidden" aria-hidden="true">
+              <span class="tile-icon-loading-visual">
+                <span class="tile-icon-loading-spinner tile-icon-loading-spinner-ring" aria-hidden="true"></span>
+              </span>
             </span>
           </span>
-        </span>
-        <span class="discovery-candidate-details">
-          <span class="discovery-candidate-source">${candidate.sourceLabel}</span>
-          <span class="discovery-candidate-title">${candidate.title}</span>
-          <span class="discovery-candidate-meta">${subtitle}</span>
-        </span>
-        <span class="discovery-candidate-action">Hinzufuegen</span>
+          <span class="discovery-candidate-details">
+            <span class="discovery-candidate-source">${candidate.sourceLabel}</span>
+            <span class="discovery-candidate-title">${candidate.title}</span>
+            <span class="discovery-candidate-meta">${subtitle}</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          class="discovery-candidate-add"
+          aria-label="${candidate.title} hinzufuegen"
+        >
+          Hinzufuegen
+        </button>
       </span>
-    </button>
+    </article>
   `;
 }
 
@@ -55,6 +66,8 @@ function initHeimdallDiscoveryPanel(options = {}) {
     return null;
   }
 
+  const shell = hub.closest(".search-discovery-shell") || hub.parentElement;
+
   const summaryUrl = hub.getAttribute("data-summary-url");
   const candidatesUrl = hub.getAttribute("data-candidates-url");
   const addUrl = hub.getAttribute("data-add-url");
@@ -65,9 +78,22 @@ function initHeimdallDiscoveryPanel(options = {}) {
   const toggle = hub.querySelector("#discovery-toggle");
   const countLabel = hub.querySelector('[data-role="count"]');
   const iconLabel = hub.querySelector('[data-role="icon"]');
-  const panel = hub.querySelector('[data-role="panel"]');
-  const state = hub.querySelector('[data-role="state"]');
-  const candidatesContainer = hub.querySelector('[data-role="candidates"]');
+  const panel = shell ? shell.querySelector('[data-role="panel"]') : null;
+  const state = shell ? shell.querySelector('[data-role="state"]') : null;
+  const candidatesContainer = shell
+    ? shell.querySelector('[data-role="candidates"]')
+    : null;
+
+  if (
+    !toggle ||
+    !countLabel ||
+    !iconLabel ||
+    !panel ||
+    !state ||
+    !candidatesContainer
+  ) {
+    return null;
+  }
 
   function setState(message = "", hidden = false) {
     state.textContent = message;
@@ -114,7 +140,7 @@ function initHeimdallDiscoveryPanel(options = {}) {
   }
 
   async function loadCandidates() {
-    setState("Suche nach neuen WLED-Geraeten ...");
+    setState("Suche nach neuen Services ...");
 
     const response = await fetchImpl(candidatesUrl, {
       headers: {
@@ -148,17 +174,21 @@ function initHeimdallDiscoveryPanel(options = {}) {
   async function addCandidate(button) {
     const candidateButton = button;
 
-    if (candidateButton.disabled) {
+    if (candidateButton.classList.contains("is-adding")) {
       return;
     }
 
-    candidateButton.disabled = true;
     candidateButton.classList.add("is-adding");
 
     const overlay = candidateButton.querySelector(".tile-icon-loading-overlay");
+    const addAction = candidateButton.querySelector(".discovery-candidate-add");
 
     if (overlay) {
       overlay.classList.remove("is-hidden");
+    }
+
+    if (addAction) {
+      addAction.disabled = true;
     }
 
     try {
@@ -185,14 +215,34 @@ function initHeimdallDiscoveryPanel(options = {}) {
       }
     } catch (error) {
       setState("Der Eintrag konnte gerade nicht uebernommen werden.");
-      candidateButton.disabled = false;
       candidateButton.classList.remove("is-adding");
 
       if (overlay) {
         overlay.classList.add("is-hidden");
       }
 
+      if (addAction) {
+        addAction.disabled = false;
+      }
+
       throw error;
+    }
+  }
+
+  function openCandidate(candidateElement) {
+    const url = candidateElement.getAttribute("data-url");
+
+    if (!url) {
+      return;
+    }
+
+    if (win && win.location && typeof win.location.assign === "function") {
+      win.location.assign(url);
+      return;
+    }
+
+    if (win && typeof win.open === "function") {
+      win.open(url, "_self");
     }
   }
 
@@ -212,15 +262,35 @@ function initHeimdallDiscoveryPanel(options = {}) {
     await loadCandidates();
   });
 
-  hub.addEventListener("click", (event) => {
-    const button = event.target.closest(".discovery-candidate");
+  shell.addEventListener("click", (event) => {
+    const addButton = event.target.closest(".discovery-candidate-add");
 
-    if (!button) {
+    if (addButton) {
+      const candidate = addButton.closest(".discovery-candidate");
+
+      if (!candidate) {
+        return;
+      }
+
+      event.preventDefault();
+      addCandidate(candidate).catch(() => {});
+      return;
+    }
+
+    const openButton = event.target.closest(".discovery-candidate-open");
+
+    if (!openButton) {
+      return;
+    }
+
+    const candidate = openButton.closest(".discovery-candidate");
+
+    if (!candidate || candidate.classList.contains("is-adding")) {
       return;
     }
 
     event.preventDefault();
-    addCandidate(button).catch(() => {});
+    openCandidate(candidate);
   });
 
   doc.addEventListener("visibilitychange", () => {

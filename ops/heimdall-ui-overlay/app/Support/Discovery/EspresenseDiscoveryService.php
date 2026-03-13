@@ -2,7 +2,6 @@
 
 namespace App\Support\Discovery;
 
-use App\Application;
 use App\Item;
 use App\User;
 use Illuminate\Http\Client\Pool;
@@ -13,16 +12,15 @@ use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
-class WledDiscoveryService
+class EspresenseDiscoveryService
 {
-    protected const APP_ID = 'ac894a3a9399f135f6eb87f27fb742c71189cc86';
-    protected const CACHE_KEY = 'discovery:wled:candidates';
-    protected const LOCK_KEY = 'discovery:wled:scan';
+    protected const CACHE_KEY = 'discovery:espresense:candidates';
+    protected const LOCK_KEY = 'discovery:espresense:scan';
     protected const DEFAULT_COLOUR = '#161b1f';
 
     public function label(): string
     {
-        return 'WLED';
+        return 'ESPresense';
     }
 
     public function candidates(): array
@@ -53,7 +51,6 @@ class WledDiscoveryService
         }
 
         $currentUser = User::currentUser();
-        $application = Application::single(self::APP_ID);
         $item = Item::create([
             'title' => $candidate['title'],
             'url' => $candidate['url'],
@@ -62,9 +59,9 @@ class WledDiscoveryService
             'pinned' => 1,
             'order' => 0,
             'type' => 0,
-            'class' => $application ? Application::classFromName($application->name) : null,
+            'class' => null,
             'user_id' => $currentUser->getId(),
-            'appid' => self::APP_ID,
+            'appid' => null,
         ]);
 
         $tagId = (int) ($candidate['tagId'] ?? $this->targetTagId());
@@ -93,7 +90,7 @@ class WledDiscoveryService
             return $cached;
         }
 
-        $lock = Cache::lock(self::LOCK_KEY, max(10, (int) config('app.discovery.wled.cache_ttl_seconds', 900)));
+        $lock = Cache::lock(self::LOCK_KEY, max(10, (int) config('app.discovery.espresense.cache_ttl_seconds', 900)));
 
         if (! $lock->get()) {
             return is_array($cached) ? $cached : [];
@@ -101,7 +98,7 @@ class WledDiscoveryService
 
         try {
             $candidates = $this->scanCandidates();
-            Cache::put(self::CACHE_KEY, $candidates, now()->addSeconds((int) config('app.discovery.wled.cache_ttl_seconds', 900)));
+            Cache::put(self::CACHE_KEY, $candidates, now()->addSeconds((int) config('app.discovery.espresense.cache_ttl_seconds', 900)));
 
             return $candidates;
         } finally {
@@ -121,15 +118,15 @@ class WledDiscoveryService
         $icon = $this->ensureIconPath();
         $tagId = $this->targetTagId();
 
-        foreach (array_chunk($hosts, max(1, (int) config('app.discovery.wled.chunk_size', 4))) as $chunk) {
+        foreach (array_chunk($hosts, max(1, (int) config('app.discovery.espresense.chunk_size', 4))) as $chunk) {
             $responses = Http::pool(function (Pool $pool) use ($chunk) {
                 $requests = [];
 
                 foreach ($chunk as $host) {
                     $requests[] = $pool
                         ->as($host)
-                        ->timeout((float) config('app.discovery.wled.timeout_seconds', 0.8))
-                        ->connectTimeout((float) config('app.discovery.wled.connect_timeout_seconds', 0.4))
+                        ->timeout((float) config('app.discovery.espresense.timeout_seconds', 0.8))
+                        ->connectTimeout((float) config('app.discovery.espresense.connect_timeout_seconds', 0.4))
                         ->acceptJson()
                         ->get("http://{$host}/json/info");
                 }
@@ -146,27 +143,21 @@ class WledDiscoveryService
 
                 $payload = $response->json();
 
-                if (! is_array($payload)) {
-                    continue;
-                }
-
-                if (! $this->isWledPayload($payload)) {
+                if (! is_array($payload) || ! $this->isEspresensePayload($payload)) {
                     continue;
                 }
 
                 $url = "http://{$host}";
-                $title = $this->candidateTitle($host, $payload);
-                $version = trim((string) ($payload['ver'] ?? ''));
+                $room = trim((string) ($payload['room'] ?? ''));
 
                 $candidates[] = [
                     'id' => sha1($url),
-                    'source' => 'wled',
+                    'source' => 'espresense',
                     'sourceLabel' => $this->label(),
-                    'title' => $title !== '' ? $title : "WLED {$host}",
-                    'subtitle' => $version !== '' ? "WLED {$version}" : 'WLED',
+                    'title' => $room !== '' ? $room : $this->fallbackTitle($host),
+                    'subtitle' => 'ESPresense Room',
                     'url' => $url,
                     'host' => $host,
-                    'appId' => self::APP_ID,
                     'icon' => $icon,
                     'iconUrl' => $this->iconUrl($icon),
                     'tagId' => $tagId,
@@ -182,55 +173,19 @@ class WledDiscoveryService
         return $candidates;
     }
 
-    protected function isWledPayload(array $payload): bool
+    protected function isEspresensePayload(array $payload): bool
     {
-        if (isset($payload['room']) && ! isset($payload['ver']) && ! isset($payload['vid']) && ! isset($payload['leds'])) {
-            return false;
-        }
-
-        return isset($payload['ver']) || isset($payload['vid']) || isset($payload['leds']) || isset($payload['fxcount']);
+        return trim((string) ($payload['room'] ?? '')) !== '';
     }
 
-    protected function candidateTitle(string $host, array $payload): string
+    protected function fallbackTitle(string $host): string
     {
-        $mdnsName = $this->mdnsName($host);
-
-        if ($mdnsName !== '') {
-            return $mdnsName;
-        }
-
-        $title = trim((string) ($payload['name'] ?? ''));
-
-        return $title !== '' ? $title : "WLED {$host}";
-    }
-
-    protected function mdnsName(string $host): string
-    {
-        try {
-            $response = Http::timeout((float) config('app.discovery.wled.timeout_seconds', 0.8))
-                ->connectTimeout((float) config('app.discovery.wled.connect_timeout_seconds', 0.4))
-                ->acceptJson()
-                ->get("http://{$host}/json/cfg");
-        } catch (\Throwable) {
-            return '';
-        }
-
-        if (! $response->successful()) {
-            return '';
-        }
-
-        $payload = $response->json();
-
-        if (! is_array($payload)) {
-            return '';
-        }
-
-        return trim((string) data_get($payload, 'id.mdns', ''));
+        return "ESPresense {$host}";
     }
 
     protected function candidateHosts(): array
     {
-        $configuredHosts = array_filter((array) config('app.discovery.wled.hosts', []));
+        $configuredHosts = array_filter((array) config('app.discovery.espresense.hosts', []));
 
         if ($configuredHosts !== []) {
             return array_values(array_unique(array_map([$this, 'normalizeHost'], $configuredHosts)));
@@ -313,7 +268,7 @@ class WledDiscoveryService
             return $candidate['id'] !== $candidateId;
         }));
 
-        Cache::put(self::CACHE_KEY, $remainingCandidates, now()->addSeconds((int) config('app.discovery.wled.cache_ttl_seconds', 900)));
+        Cache::put(self::CACHE_KEY, $remainingCandidates, now()->addSeconds((int) config('app.discovery.espresense.cache_ttl_seconds', 900)));
     }
 
     protected function targetTagId(): int
@@ -321,8 +276,8 @@ class WledDiscoveryService
         $tag = Item::query()
             ->where('type', 1)
             ->where(function ($query) {
-                $query->where('url', 'wled')
-                    ->orWhere('title', 'WLED');
+                $query->where('url', 'espresense')
+                    ->orWhere('title', 'ESPresense');
             })
             ->orderByDesc('pinned')
             ->first();
@@ -332,21 +287,7 @@ class WledDiscoveryService
 
     protected function ensureIconPath(): ?string
     {
-        $iconPath = 'icons/wled.png';
-
-        if (Storage::disk('public')->exists($iconPath)) {
-            return $iconPath;
-        }
-
-        try {
-            $application = Application::getApp(self::APP_ID);
-
-            if ($application && method_exists($application, 'icon')) {
-                return $application->icon();
-            }
-        } catch (\Throwable) {
-            return null;
-        }
+        $iconPath = 'icons/espresense.svg';
 
         return Storage::disk('public')->exists($iconPath) ? $iconPath : null;
     }

@@ -30,6 +30,9 @@ class WledDiscoveryTest extends TestCase
             'app.discovery.wled.chunk_size' => 10,
             'app.discovery.wled.timeout_seconds' => 1,
             'app.discovery.wled.connect_timeout_seconds' => 1,
+            'app.discovery.espresense.hosts' => [
+                '192.168.3.250',
+            ],
         ]);
     }
 
@@ -55,9 +58,12 @@ class WledDiscoveryTest extends TestCase
         $response->assertJsonPath('sources.0.key', 'wled');
         $response->assertJsonPath('sources.0.count', 1);
 
-        Http::assertSentCount(1);
+        Http::assertSentCount(2);
         Http::assertSent(function ($request) {
             return (string) $request->url() === 'http://192.168.3.60/json/info';
+        });
+        Http::assertSent(function ($request) {
+            return (string) $request->url() === 'http://192.168.3.60/json/cfg';
         });
     }
 
@@ -84,6 +90,57 @@ class WledDiscoveryTest extends TestCase
         $response->assertJsonPath('candidates.0.title', 'Terrasse');
         $response->assertJsonPath('candidates.0.url', 'http://192.168.3.77');
         $response->assertJsonPath('candidates.0.host', '192.168.3.77');
+    }
+
+    public function test_discovery_candidates_prefer_wled_mdns_name_over_generic_title(): void
+    {
+        config([
+            'app.discovery.wled.hosts' => [
+                '192.168.3.64',
+            ],
+        ]);
+
+        Http::fake([
+            'http://192.168.3.64/json/info' => Http::response([
+                'name' => 'WLED',
+                'ver' => '0.14.1',
+                'vid' => 2401141,
+                'id' => [
+                    'name' => 'WLED',
+                ],
+            ], 200),
+            'http://192.168.3.64/json/cfg' => Http::response([
+                'id' => [
+                    'mdns' => 'wled-buero2',
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->getJson('/discoveries/candidates');
+
+        $response->assertOk();
+        $response->assertJsonPath('candidates.0.title', 'wled-buero2');
+    }
+
+    public function test_discovery_ignores_espresense_hosts_when_scanning_for_wled(): void
+    {
+        config([
+            'app.discovery.wled.hosts' => [
+                '192.168.3.239',
+            ],
+        ]);
+
+        Http::fake([
+            'http://192.168.3.239/json/info' => Http::response([
+                'room' => 'Kueche',
+            ], 200),
+        ]);
+
+        $response = $this->getJson('/discoveries/candidates');
+
+        $response->assertOk();
+        $response->assertJsonPath('totalCount', 0);
+        $response->assertJsonCount(0, 'candidates');
     }
 
     public function test_discovery_uses_the_request_host_when_app_url_is_localhost(): void

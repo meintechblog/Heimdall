@@ -9,6 +9,7 @@ use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
@@ -120,7 +121,7 @@ class WledDiscoveryService
                 $requests = [];
 
                 foreach ($chunk as $host) {
-                    $requests[$host] = $pool
+                    $requests[] = $pool
                         ->as($host)
                         ->timeout((float) config('app.discovery.wled.timeout_seconds', 0.8))
                         ->connectTimeout((float) config('app.discovery.wled.connect_timeout_seconds', 0.4))
@@ -180,7 +181,7 @@ class WledDiscoveryService
             return array_values(array_unique(array_map([$this, 'normalizeHost'], $configuredHosts)));
         }
 
-        $baseHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+        $baseHost = $this->discoverBaseHost();
 
         if (! is_string($baseHost) || ! filter_var($baseHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             return [];
@@ -201,6 +202,23 @@ class WledDiscoveryService
         }
 
         return $hosts;
+    }
+
+    protected function discoverBaseHost(): ?string
+    {
+        $configHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+
+        if (is_string($configHost) && filter_var($configHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return $this->normalizeHost($configHost);
+        }
+
+        $requestHost = Request::getHost();
+
+        if (is_string($requestHost) && filter_var($requestHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return $this->normalizeHost($requestHost);
+        }
+
+        return null;
     }
 
     protected function filterExistingHosts(array $candidates): array

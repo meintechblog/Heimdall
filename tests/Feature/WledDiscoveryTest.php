@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Item;
+use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -83,6 +84,33 @@ class WledDiscoveryTest extends TestCase
         $response->assertJsonPath('candidates.0.title', 'Terrasse');
         $response->assertJsonPath('candidates.0.url', 'http://192.168.3.77');
         $response->assertJsonPath('candidates.0.host', '192.168.3.77');
+    }
+
+    public function test_discovery_uses_the_request_host_when_app_url_is_localhost(): void
+    {
+        config([
+            'app.url' => 'http://localhost',
+            'app.discovery.wled.hosts' => [],
+        ]);
+
+        app()->instance('request', HttpRequest::create(
+            'http://192.168.3.88/discoveries/candidates',
+            'GET',
+            [],
+            [],
+            [],
+            [
+                'HTTP_HOST' => '192.168.3.88',
+                'SERVER_NAME' => '192.168.3.88',
+            ]
+        ));
+
+        $service = app(\App\Support\Discovery\WledDiscoveryService::class);
+        $reflection = new \ReflectionClass($service);
+        $method = $reflection->getMethod('discoverBaseHost');
+        $method->setAccessible(true);
+
+        $this->assertSame('192.168.3.88', $method->invoke($service));
     }
 
     public function test_creates_a_new_item_from_a_cached_wled_candidate(): void

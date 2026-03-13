@@ -320,7 +320,7 @@ class Item extends Model
         if ($this->enhanced()) {
             $config = $this->getconfig();
             if ($config) {
-                return (bool) $config->enabled;
+                return property_exists($config, 'enabled') ? (bool) $config->enabled : false;
             }
         }
 
@@ -347,6 +347,10 @@ class Item extends Model
         $config = json_decode($this->description);
 
         // $config->name = end($explode);
+
+        if (! property_exists($config, 'enabled')) {
+            $config->enabled = false;
+        }
 
         $config->url = $this->url;
         if (isset($config->override_url) && ! empty($config->override_url)) {

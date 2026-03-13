@@ -316,3 +316,71 @@ test("adds a prepared discovery tile as a normal item from the add button", asyn
 
   assert.deepEqual(reloads, ["reload"]);
 });
+
+test("escapes discovery candidate content before rendering", async () => {
+  createDiscoveryDom();
+
+  const fetchMock = async (url) => {
+    if (url === "/discoveries/summary") {
+      return {
+        ok: true,
+        json: async () => ({
+          totalCount: 1,
+          sources: [{ key: "wled", label: "WLED", count: 1 }],
+        }),
+      };
+    }
+
+    if (url === "/discoveries/candidates") {
+      return {
+        ok: true,
+        json: async () => ({
+          totalCount: 1,
+          candidates: [
+            {
+              id: 'candidate-1" onclick="alert(1)',
+              source: "wled",
+              sourceLabel: 'WLED"><img src=x data-injected="label">',
+              title: '<img src=x data-injected="title">',
+              subtitle: '<img src=x data-injected="subtitle">',
+              host: "192.168.3.64",
+              url: 'http://192.168.3.64" data-injected="url',
+              iconUrl: "/storage/icons/wled.png",
+            },
+          ],
+        }),
+      };
+    }
+
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+
+  const discovery = initDiscoveryPanel({
+    document,
+    window,
+    fetch: fetchMock,
+    scheduleInterval: () => 1,
+    autoStart: false,
+  });
+
+  await discovery.refreshSummary();
+  document.getElementById("discovery-toggle").dispatchEvent(
+    new window.MouseEvent("click", { bubbles: true, cancelable: true })
+  );
+  await flush();
+
+  const candidates = document.querySelector('[data-role="candidates"]');
+  assert.equal(
+    candidates.querySelector('[data-injected="title"]'),
+    null
+  );
+  assert.equal(
+    candidates.querySelector('[data-injected="subtitle"]'),
+    null
+  );
+  assert.equal(
+    candidates.querySelector('[data-injected="label"]'),
+    null
+  );
+  assert.match(candidates.textContent, /<img src=x data-injected="title">/);
+});

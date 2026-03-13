@@ -1,23 +1,41 @@
+function escapeHtml(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function renderCandidateMarkup(candidate) {
   const subtitle = [candidate.host, candidate.subtitle]
     .filter(Boolean)
     .join(" · ");
+  const safeCandidate = {
+    id: escapeHtml(candidate.id),
+    source: escapeHtml(candidate.source),
+    url: escapeHtml(candidate.url),
+    iconUrl: escapeHtml(candidate.iconUrl),
+    sourceLabel: escapeHtml(candidate.sourceLabel),
+    title: escapeHtml(candidate.title),
+    subtitle: escapeHtml(subtitle),
+  };
 
   return `
     <article
       class="discovery-candidate"
-      data-candidate-id="${candidate.id}"
-      data-source="${candidate.source}"
-      data-url="${candidate.url}"
+      data-candidate-id="${safeCandidate.id}"
+      data-source="${safeCandidate.source}"
+      data-url="${safeCandidate.url}"
     >
       <span class="discovery-candidate-card">
         <button
           type="button"
           class="discovery-candidate-open"
-          aria-label="${candidate.title} oeffnen"
+          aria-label="${safeCandidate.title} oeffnen"
         >
           <span class="app-icon-container">
-            <img class="app-icon" src="${candidate.iconUrl}" alt="${candidate.sourceLabel}" />
+            <img class="app-icon" src="${safeCandidate.iconUrl}" alt="${safeCandidate.sourceLabel}" />
             <span class="tile-icon-loading-overlay is-hidden" aria-hidden="true">
               <span class="tile-icon-loading-visual">
                 <span class="tile-icon-loading-spinner tile-icon-loading-spinner-ring" aria-hidden="true"></span>
@@ -25,15 +43,15 @@ function renderCandidateMarkup(candidate) {
             </span>
           </span>
           <span class="discovery-candidate-details">
-            <span class="discovery-candidate-source">${candidate.sourceLabel}</span>
-            <span class="discovery-candidate-title">${candidate.title}</span>
-            <span class="discovery-candidate-meta">${subtitle}</span>
+            <span class="discovery-candidate-source">${safeCandidate.sourceLabel}</span>
+            <span class="discovery-candidate-title">${safeCandidate.title}</span>
+            <span class="discovery-candidate-meta">${safeCandidate.subtitle}</span>
           </span>
         </button>
         <button
           type="button"
           class="discovery-candidate-add"
-          aria-label="${candidate.title} hinzufuegen"
+          aria-label="${safeCandidate.title} hinzufuegen"
         >
           Hinzufuegen
         </button>

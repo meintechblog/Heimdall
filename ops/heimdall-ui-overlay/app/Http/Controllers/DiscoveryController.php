@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Support\Discovery\EspresenseDiscoveryService;
 use App\Support\Discovery\WledDiscoveryService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,6 +24,8 @@ class DiscoveryController extends Controller
 
     public function summary(): JsonResponse
     {
+        $this->authorizeDiscoveryAccess(request());
+
         $sources = [];
         $totalCount = 0;
 
@@ -50,6 +53,8 @@ class DiscoveryController extends Controller
 
     public function candidates(): JsonResponse
     {
+        $this->authorizeDiscoveryAccess(request());
+
         $candidates = [];
 
         foreach (self::SOURCE_SERVICES as $serviceClass) {
@@ -69,6 +74,8 @@ class DiscoveryController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $this->authorizeDiscoveryAccess($request);
+
         $validated = $request->validate([
             'source' => 'required|string',
             'candidateId' => 'required|string',
@@ -81,5 +88,22 @@ class DiscoveryController extends Controller
         $result = app($serviceClass)->createItemFromCandidate($validated['candidateId']);
 
         return response()->json($result, $result['created'] ? Response::HTTP_CREATED : Response::HTTP_OK);
+    }
+
+    protected function authorizeDiscoveryAccess(Request $request): void
+    {
+        if (! config('app.auth_roles_enable')) {
+            return;
+        }
+
+        $headerName = (string) config('app.auth_roles_http_header', 'HTTP_REMOTE_GROUPS');
+        $adminRole = (string) config('app.auth_roles_admin', 'admin');
+        $delimiter = (string) config('app.auth_roles_delimiter', ',');
+        $rawRoles = trim((string) $request->server($headerName, ''));
+        $roles = array_filter(array_map('trim', explode($delimiter, $rawRoles)));
+
+        if (! in_array($adminRole, $roles, true)) {
+            throw new AuthorizationException('Discovery requires admin privileges.');
+        }
     }
 }

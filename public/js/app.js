@@ -4165,9 +4165,21 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     updateTagButtonCounts: updateTagButtonCounts
   };
 });
+function escapeHtml(value) {
+  return String(value == null ? "" : value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 function renderCandidateMarkup(candidate) {
   var subtitle = [candidate.host, candidate.subtitle].filter(Boolean).join(" · ");
-  return "\n    <article\n      class=\"discovery-candidate\"\n      data-candidate-id=\"".concat(candidate.id, "\"\n      data-source=\"").concat(candidate.source, "\"\n      data-url=\"").concat(candidate.url, "\"\n    >\n      <span class=\"discovery-candidate-card\">\n        <button\n          type=\"button\"\n          class=\"discovery-candidate-open\"\n          aria-label=\"").concat(candidate.title, " oeffnen\"\n        >\n          <span class=\"app-icon-container\">\n            <img class=\"app-icon\" src=\"").concat(candidate.iconUrl, "\" alt=\"").concat(candidate.sourceLabel, "\" />\n            <span class=\"tile-icon-loading-overlay is-hidden\" aria-hidden=\"true\">\n              <span class=\"tile-icon-loading-visual\">\n                <span class=\"tile-icon-loading-spinner tile-icon-loading-spinner-ring\" aria-hidden=\"true\"></span>\n              </span>\n            </span>\n          </span>\n          <span class=\"discovery-candidate-details\">\n            <span class=\"discovery-candidate-source\">").concat(candidate.sourceLabel, "</span>\n            <span class=\"discovery-candidate-title\">").concat(candidate.title, "</span>\n            <span class=\"discovery-candidate-meta\">").concat(subtitle, "</span>\n          </span>\n        </button>\n        <button\n          type=\"button\"\n          class=\"discovery-candidate-add\"\n          aria-label=\"").concat(candidate.title, " hinzufuegen\"\n        >\n          Hinzufuegen\n        </button>\n      </span>\n    </article>\n  ");
+  var safeCandidate = {
+    id: escapeHtml(candidate.id),
+    source: escapeHtml(candidate.source),
+    url: escapeHtml(candidate.url),
+    iconUrl: escapeHtml(candidate.iconUrl),
+    sourceLabel: escapeHtml(candidate.sourceLabel),
+    title: escapeHtml(candidate.title),
+    subtitle: escapeHtml(subtitle)
+  };
+  return "\n    <article\n      class=\"discovery-candidate\"\n      data-candidate-id=\"".concat(safeCandidate.id, "\"\n      data-source=\"").concat(safeCandidate.source, "\"\n      data-url=\"").concat(safeCandidate.url, "\"\n    >\n      <span class=\"discovery-candidate-card\">\n        <button\n          type=\"button\"\n          class=\"discovery-candidate-open\"\n          aria-label=\"").concat(safeCandidate.title, " oeffnen\"\n        >\n          <span class=\"app-icon-container\">\n            <img class=\"app-icon\" src=\"").concat(safeCandidate.iconUrl, "\" alt=\"").concat(safeCandidate.sourceLabel, "\" />\n            <span class=\"tile-icon-loading-overlay is-hidden\" aria-hidden=\"true\">\n              <span class=\"tile-icon-loading-visual\">\n                <span class=\"tile-icon-loading-spinner tile-icon-loading-spinner-ring\" aria-hidden=\"true\"></span>\n              </span>\n            </span>\n          </span>\n          <span class=\"discovery-candidate-details\">\n            <span class=\"discovery-candidate-source\">").concat(safeCandidate.sourceLabel, "</span>\n            <span class=\"discovery-candidate-title\">").concat(safeCandidate.title, "</span>\n            <span class=\"discovery-candidate-meta\">").concat(safeCandidate.subtitle, "</span>\n          </span>\n        </button>\n        <button\n          type=\"button\"\n          class=\"discovery-candidate-add\"\n          aria-label=\"").concat(safeCandidate.title, " hinzufuegen\"\n        >\n          Hinzufuegen\n        </button>\n      </span>\n    </article>\n  ");
 }
 function initHeimdallDiscoveryPanel() {
   var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};

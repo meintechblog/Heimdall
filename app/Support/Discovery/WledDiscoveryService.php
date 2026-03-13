@@ -116,7 +116,7 @@ class WledDiscoveryService
         $icon = $this->ensureIconPath();
         $tagId = $this->targetTagId();
 
-        foreach (array_chunk($hosts, max(1, (int) config('app.discovery.wled.chunk_size', 24))) as $chunk) {
+        foreach (array_chunk($hosts, max(1, (int) config('app.discovery.wled.chunk_size', 4))) as $chunk) {
             $responses = Http::pool(function (Pool $pool) use ($chunk) {
                 $requests = [];
 
@@ -298,11 +298,37 @@ class WledDiscoveryService
 
     protected function iconUrl(?string $iconPath): string
     {
+        $baseUrl = $this->baseUrl();
+
         if (is_string($iconPath) && $iconPath !== '' && Storage::disk('public')->exists($iconPath)) {
-            return asset('storage/'.$iconPath);
+            return "{$baseUrl}/storage/{$iconPath}";
         }
 
-        return asset('/img/heimdall-icon-small.png');
+        return "{$baseUrl}/img/heimdall-icon-small.png";
+    }
+
+    protected function baseUrl(): string
+    {
+        $configUrl = rtrim((string) config('app.url'), '/');
+        $configHost = parse_url($configUrl, PHP_URL_HOST);
+
+        if (
+            $configUrl !== ''
+            && is_string($configHost)
+            && $configHost !== ''
+            && strtolower($configHost) !== 'localhost'
+        ) {
+            return $configUrl;
+        }
+
+        $scheme = Request::getScheme();
+        $host = Request::getHttpHost();
+
+        if (is_string($host) && $host !== '') {
+            return "{$scheme}://{$host}";
+        }
+
+        return $configUrl !== '' ? $configUrl : 'http://localhost';
     }
 
     protected function extractHost(?string $url): ?string

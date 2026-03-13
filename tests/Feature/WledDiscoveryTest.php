@@ -113,6 +113,41 @@ class WledDiscoveryTest extends TestCase
         $this->assertSame('192.168.3.88', $method->invoke($service));
     }
 
+    public function test_discovery_uses_the_request_host_for_icon_urls_when_app_url_is_localhost(): void
+    {
+        config([
+            'app.url' => 'http://localhost',
+            'app.discovery.wled.hosts' => [
+                '192.168.3.77',
+            ],
+        ]);
+
+        app()->instance('request', HttpRequest::create(
+            'http://192.168.3.88/discoveries/candidates',
+            'GET',
+            [],
+            [],
+            [],
+            [
+                'HTTP_HOST' => '192.168.3.88',
+                'SERVER_NAME' => '192.168.3.88',
+                'REQUEST_SCHEME' => 'http',
+            ]
+        ));
+
+        Http::fake([
+            'http://192.168.3.77/json/info' => Http::response([
+                'name' => 'Terrasse',
+                'ver' => '0.15.0',
+            ], 200),
+        ]);
+
+        $response = $this->getJson('/discoveries/candidates');
+
+        $response->assertOk();
+        $response->assertJsonPath('candidates.0.iconUrl', 'http://192.168.3.88/storage/icons/wled.png');
+    }
+
     public function test_creates_a_new_item_from_a_cached_wled_candidate(): void
     {
         Storage::disk('public')->put('icons/wled.png', 'wled');

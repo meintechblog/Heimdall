@@ -86,6 +86,16 @@ PRIVATE_APPS_TINKER='$apps = [[
     "license" => "Victron Energy documentation and software ecosystem",
     "description" => "Venus OS local Victron metrics.",
     "tile_background" => "dark",
+], [
+    "appid" => "d65462dfcc2066849a1aeac8712497f95315ecd9",
+    "name" => "Shelly",
+    "class" => "App\\SupportedApps\\Shelly\\Shelly",
+    "enhanced" => 0,
+    "icon" => "icons/shelly.png",
+    "website" => "https://www.shelly.com/",
+    "license" => "Shelly device firmware and local web UI",
+    "description" => "Shelly devices discovered on the local network.",
+    "tile_background" => "dark",
 ]];
 
 foreach ($apps as $app) {
@@ -105,7 +115,8 @@ echo "[4/5] register private app types"
 pct exec "$CTID" -- bash -lc "cd '$TARGET_ROOT' && php artisan tinker --execute=$(printf '%q' "$PRIVATE_APPS_TINKER") >/dev/null 2>&1"
 pct exec "$CTID" -- sh -lc "\
   mkdir -p '$TARGET_ROOT/storage/app/public/icons' && \
-  cp -f '$TARGET_ROOT/app/SupportedApps/VenusOS/venusos.png' '$TARGET_ROOT/storage/app/public/icons/venusos.png'"
+  cp -f '$TARGET_ROOT/app/SupportedApps/VenusOS/venusos.png' '$TARGET_ROOT/storage/app/public/icons/venusos.png' && \
+  cp -f '$TARGET_ROOT/app/SupportedApps/Shelly/shelly.png' '$TARGET_ROOT/storage/app/public/icons/shelly.png'"
 
 echo "[5/5] clear laravel caches"
 pct exec "$CTID" -- sh -lc "cd '$TARGET_ROOT' && php artisan view:clear >/dev/null 2>&1"

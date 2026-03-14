@@ -23,11 +23,16 @@ The overlay export currently includes:
 - `app/Item.php`
 - `app/Http/Controllers/DiscoveryController.php`
 - `app/Search.php`
+- `app/Support/Discovery/ShellyDiscoveryService.php`
+- `app/Support/Discovery/VenusOSDiscoveryService.php`
 - `app/Support/Discovery/WledDiscoveryService.php`
 - `app/SupportedApps/Proxmox/Proxmox.php`
 - `app/SupportedApps/Proxmox/app.json`
 - `app/SupportedApps/Proxmox/config.blade.php`
 - `app/SupportedApps/Proxmox/livestats.blade.php`
+- `app/SupportedApps/Shelly/Shelly.php`
+- `app/SupportedApps/Shelly/app.json`
+- `app/SupportedApps/Shelly/shelly.png`
 - `app/SupportedApps/VenusOS/VenusOS.php`
 - `app/SupportedApps/VenusOS/app.json`
 - `app/SupportedApps/VenusOS/config.blade.php`
@@ -191,7 +196,7 @@ For the VenusOS tile customization, confirm:
 For the dashboard discovery flow, confirm:
 
 - `GET /discoveries/summary` responds on the live instance
-- the dashboard only shows the `+` button when there really are unmatched `WLED` or `ESPresense` devices
+- the dashboard only shows the `+` button when there really are unmatched `WLED`, `ESPresense`, `VenusOS`, or `Shelly` devices
 - the `+` button sits next to the search field
 - clicking `+` expands prepared discovery tiles directly below the search bar
 - clicking a discovery card opens the device itself
@@ -200,6 +205,8 @@ For the dashboard discovery flow, confirm:
 - WLED candidates are deduplicated by device identity (`mac`) so the same controller does not reappear via `.local`, WLAN IP, or LAN IP
 - existing WLED items can keep alias metadata in their stored config and the edit page can switch the active URL between discovered addresses
 - ESPresense candidates prefer the configured `room` name when available
+- VenusOS candidates are detected from the local Victron/Venus web markers and create typed `VenusOS` items
+- Shelly candidates prefer the configured Shelly `name` from `/settings` and create typed `Shelly` items
 - when no new discovery devices exist, the discovery button stays hidden
 
 For live operations, keep CT100 on a normal web stack (`nginx` + `php-fpm`) instead of `php artisan serve`. The built-in Laravel dev server is acceptable for quick local testing, but it is too fragile for live dashboard traffic and multiple parallel live-stat requests.

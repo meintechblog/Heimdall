@@ -28,6 +28,12 @@ class EspresenseDiscoveryTest extends TestCase
             'app.discovery.espresense.chunk_size' => 4,
             'app.discovery.espresense.timeout_seconds' => 1,
             'app.discovery.espresense.connect_timeout_seconds' => 1,
+            'app.discovery.venusos.hosts' => [
+                '203.0.113.3',
+            ],
+            'app.discovery.shelly.hosts' => [
+                '203.0.113.2',
+            ],
         ]);
     }
 

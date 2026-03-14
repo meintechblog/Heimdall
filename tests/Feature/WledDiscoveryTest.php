@@ -35,6 +35,12 @@ class WledDiscoveryTest extends TestCase
             'app.discovery.espresense.hosts' => [
                 '192.168.3.250',
             ],
+            'app.discovery.venusos.hosts' => [
+                '203.0.113.3',
+            ],
+            'app.discovery.shelly.hosts' => [
+                '203.0.113.2',
+            ],
         ]);
     }
 

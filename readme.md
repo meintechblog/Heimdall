@@ -92,7 +92,7 @@ This fork also carries a private `VenusOS` enhanced app for local Victron/Venus 
 
 This fork also carries a cached multi-source auto-discovery flow on the dashboard:
 
-- the dashboard checks in the background for new `WLED` and `ESPresense` devices that are not already present in the item list
+- the dashboard checks in the background for new `WLED`, `ESPresense`, `VenusOS`, and `Shelly` devices that are not already present in the item list
 - the `+` button sits directly next to the search field and only appears when unmatched discovery candidates exist
 - clicking `+` opens prepared discovery tiles directly below the search field
 - clicking a discovery card opens the device itself
@@ -102,14 +102,20 @@ This fork also carries a cached multi-source auto-discovery flow on the dashboar
 - already-known WLED items are suppressed even when Heimdall currently stores them under a friendly hostname like `wled-buero.local`
 - WLED items store discovered alias addresses in the item config so the edit page can offer a concrete active URL selection
 - ESPresense candidates prefer the configured `room` value from `/json/info` as the suggested title
+- VenusOS candidates are detected from the local Victron/Venus web markers and add real `VenusOS` tiles with the expected MQTT config shape
+- Shelly candidates prefer the device `name` from `/settings` and add real `Shelly` tiles instead of generic links
 - discovery is intentionally cache-backed, chunked, and tab-visibility-aware so it does not keep hammering the LAN while the dashboard is hidden
 
 Optional tuning for discovery:
 
 - `DISCOVERY_WLED_HOSTS=192.168.3.50,192.168.3.60` to limit scanning to known hosts instead of the whole local `/24`
 - `DISCOVERY_ESPRESENSE_HOSTS=192.168.3.239,192.168.3.240` to limit ESPresense scanning to known hosts instead of the whole local `/24`
+- `DISCOVERY_VENUSOS_HOSTS=192.168.3.11,192.168.3.14` to limit VenusOS scanning to known GX hosts instead of the whole local `/24`
+- `DISCOVERY_SHELLY_HOSTS=192.168.3.40,192.168.3.56` to limit Shelly scanning to known hosts instead of the whole local `/24`
 - `DISCOVERY_WLED_CACHE_TTL_SECONDS=900` to control how long WLED candidates stay cached
 - `DISCOVERY_ESPRESENSE_CACHE_TTL_SECONDS=900` to control how long ESPresense candidates stay cached
+- `DISCOVERY_VENUSOS_CACHE_TTL_SECONDS=900` to control how long VenusOS candidates stay cached
+- `DISCOVERY_SHELLY_CACHE_TTL_SECONDS=900` to control how long Shelly candidates stay cached
 - `DISCOVERY_SUMMARY_REFRESH_SECONDS=300` to control how often the dashboard rechecks the cached discovery summary
 
 Shared Heimdall tile design rules for the Hulki fork are documented in `docs/plans/2026-03-12-heimdall-tile-ci-design.md`. Use that as the baseline when adding new live-stat tile extensions so loading behavior, polling discipline, and icon-area feedback stay consistent.

@@ -35,6 +35,27 @@ return [
             'connect_timeout_seconds' => (float) env('DISCOVERY_ESPRESENSE_CONNECT_TIMEOUT_SECONDS', 0.4),
             'chunk_size' => (int) env('DISCOVERY_ESPRESENSE_CHUNK_SIZE', 4),
         ],
+        'venusos' => [
+            'hosts' => array_values(array_filter(array_map(
+                static fn ($host) => trim($host),
+                explode(',', (string) env('DISCOVERY_VENUSOS_HOSTS', ''))
+            ))),
+            'cache_ttl_seconds' => (int) env('DISCOVERY_VENUSOS_CACHE_TTL_SECONDS', 900),
+            'timeout_seconds' => (float) env('DISCOVERY_VENUSOS_TIMEOUT_SECONDS', 0.8),
+            'connect_timeout_seconds' => (float) env('DISCOVERY_VENUSOS_CONNECT_TIMEOUT_SECONDS', 0.4),
+            'chunk_size' => (int) env('DISCOVERY_VENUSOS_CHUNK_SIZE', 4),
+            'mqtt_port' => (int) env('DISCOVERY_VENUSOS_MQTT_PORT', 1883),
+        ],
+        'shelly' => [
+            'hosts' => array_values(array_filter(array_map(
+                static fn ($host) => trim($host),
+                explode(',', (string) env('DISCOVERY_SHELLY_HOSTS', ''))
+            ))),
+            'cache_ttl_seconds' => (int) env('DISCOVERY_SHELLY_CACHE_TTL_SECONDS', 900),
+            'timeout_seconds' => (float) env('DISCOVERY_SHELLY_TIMEOUT_SECONDS', 0.8),
+            'connect_timeout_seconds' => (float) env('DISCOVERY_SHELLY_CONNECT_TIMEOUT_SECONDS', 0.4),
+            'chunk_size' => (int) env('DISCOVERY_SHELLY_CHUNK_SIZE', 4),
+        ],
     ],
 
     'aliases' => Facade::defaultAliases()->merge([

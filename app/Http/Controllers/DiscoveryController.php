@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Support\Discovery\EspresenseDiscoveryService;
+use App\Support\Discovery\ShellyDiscoveryService;
+use App\Support\Discovery\VenusOSDiscoveryService;
 use App\Support\Discovery\WledDiscoveryService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -14,6 +16,8 @@ class DiscoveryController extends Controller
     protected const SOURCE_SERVICES = [
         'wled' => WledDiscoveryService::class,
         'espresense' => EspresenseDiscoveryService::class,
+        'venusos' => VenusOSDiscoveryService::class,
+        'shelly' => ShellyDiscoveryService::class,
     ];
 
     public function __construct()

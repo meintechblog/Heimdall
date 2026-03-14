@@ -43,10 +43,13 @@ Das macht:
 - Proxmox-Kacheln zeigen bewusst `Guests`, `CPU` und `RAM`, wobei `Guests` aus `VM + LXC` zusammengezählt wird.
 - VenusOS-Kacheln lesen lokal per `MQTT on LAN (Plaintext)` auf Port `1883`; für `VenusOS Hallbude 3.11` ist die Portal-ID aktuell `dca6327406c5`.
 - Der Live-Deploy registriert den privaten Anwendungstyp `VenusOS` automatisch erneut, falls Heimdall-Updates ihn aus der Datenbank werfen.
+- Der Live-Deploy registriert jetzt auch den privaten Anwendungstyp `Shelly` erneut, damit per Discovery angelegte Shelly-Geraete nicht auf generische Links zurueckfallen.
 - Neue Live-Stat-Kacheln sollen sich an `docs/plans/2026-03-12-heimdall-tile-ci-design.md` orientieren, damit Spinner, Polling und Fallbacks gleich bleiben.
-- Die Discovery scannt absichtlich gecacht im Hintergrund; wenn du das enger ziehen willst, setze `DISCOVERY_WLED_HOSTS` und `DISCOVERY_ESPRESENSE_HOSTS` auf feste Hostlisten statt das lokale `/24` abzutasten.
+- Die Discovery scannt absichtlich gecacht im Hintergrund; wenn du das enger ziehen willst, setze `DISCOVERY_WLED_HOSTS`, `DISCOVERY_ESPRESENSE_HOSTS`, `DISCOVERY_VENUSOS_HOSTS` und `DISCOVERY_SHELLY_HOSTS` auf feste Hostlisten statt das lokale `/24` abzutasten.
 - WLED-Discovery dedupliziert ueber die WLED-`mac`, damit dasselbe Geraet nicht noch einmal ueber `.local`, WLAN-IP oder LAN-IP im `+` auftaucht.
 - Auf der WLED-Edit-Seite wird die aktive URL jetzt aus den bekannten Alias-Adressen ausgewaehlt und wieder ins normale `url`-Feld geschrieben.
+- VenusOS-Discovery erkennt Victron-Geraete ueber den lokalen `/gui-v1`-/`websocket-mqtt`-Stack und legt direkt echte `VenusOS`-Eintraege an.
+- Shelly-Discovery liest `/shelly` plus `/settings`, verwendet den Shelly-Namen als Vorschlag und legt direkt echte `Shelly`-Eintraege an.
 
 ## Schnelle Live-Checks
 

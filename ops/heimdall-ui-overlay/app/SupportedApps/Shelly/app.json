@@ -1,0 +1,10 @@
+{
+  "appid": "d65462dfcc2066849a1aeac8712497f95315ecd9",
+  "name": "Shelly",
+  "website": "https://www.shelly.com/",
+  "license": "Shelly device firmware and local web UI",
+  "description": "Shelly smart devices discovered on the local network.",
+  "enhanced": false,
+  "tile_background": "dark",
+  "icon": "shelly.png"
+}

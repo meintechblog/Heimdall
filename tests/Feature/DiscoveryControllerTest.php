@@ -48,8 +48,18 @@ class DiscoveryControllerTest extends TestCase
             'app.auth_roles_http_header' => 'HTTP_REMOTE_GROUPS',
             'app.auth_roles_admin' => 'admin',
             'app.auth_roles_delimiter' => ',',
-            'app.discovery.wled.hosts' => [],
-            'app.discovery.espresense.hosts' => [],
+            'app.discovery.wled.hosts' => [
+                '203.0.113.10',
+            ],
+            'app.discovery.espresense.hosts' => [
+                '203.0.113.11',
+            ],
+            'app.discovery.venusos.hosts' => [
+                '203.0.113.3',
+            ],
+            'app.discovery.shelly.hosts' => [
+                '203.0.113.2',
+            ],
         ]);
 
         $this->withServerVariables([

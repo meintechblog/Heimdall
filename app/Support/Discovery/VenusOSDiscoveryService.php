@@ -1,0 +1,387 @@
+<?php
+
+namespace App\Support\Discovery;
+
+use App\Item;
+use App\User;
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
+
+class VenusOSDiscoveryService
+{
+    protected const APP_ID = '191c67b4933ec1ca9dda6ccb69a4a7e0d40d42e9';
+    protected const CACHE_KEY = 'discovery:venusos:candidates';
+    protected const LOCK_KEY = 'discovery:venusos:scan';
+    protected const DEFAULT_COLOUR = '#161b1f';
+
+    public function label(): string
+    {
+        return 'VenusOS';
+    }
+
+    public function candidates(): array
+    {
+        return $this->filterExistingHosts($this->cachedCandidates());
+    }
+
+    public function createItemFromCandidate(string $candidateId): array
+    {
+        $candidate = collect($this->candidates())
+            ->firstWhere('id', $candidateId);
+
+        abort_if($candidate === null, HttpResponse::HTTP_NOT_FOUND, 'Discovery candidate not found.');
+
+        $existingItem = $this->existingItemForHost($candidate['host']);
+
+        if ($existingItem) {
+            $this->forgetCandidate($candidateId);
+
+            return [
+                'created' => false,
+                'item' => [
+                    'id' => $existingItem->id,
+                    'title' => $existingItem->title,
+                    'url' => $existingItem->url,
+                ],
+            ];
+        }
+
+        $currentUser = User::currentUser();
+        $config = array_merge([
+            'enabled' => true,
+            'override_url' => null,
+            'mqtt_port' => (int) config('app.discovery.venusos.mqtt_port', 1883),
+            'portal_id' => null,
+        ], is_array($candidate['config'] ?? null) ? $candidate['config'] : []);
+
+        $item = Item::create([
+            'title' => $candidate['title'],
+            'url' => $candidate['url'],
+            'colour' => $candidate['colour'] ?? self::DEFAULT_COLOUR,
+            'icon' => $candidate['icon'] ?? $this->ensureIconPath(),
+            'pinned' => 1,
+            'order' => 0,
+            'type' => 0,
+            'class' => 'App\\SupportedApps\\VenusOS\\VenusOS',
+            'user_id' => $currentUser->getId(),
+            'appid' => self::APP_ID,
+            'description' => json_encode($config),
+        ]);
+
+        $tagId = (int) ($candidate['tagId'] ?? $this->targetTagId());
+
+        if ($tagId > 0) {
+            $item->parents()->sync([$tagId]);
+        }
+
+        $this->forgetCandidate($candidateId);
+
+        return [
+            'created' => true,
+            'item' => [
+                'id' => $item->id,
+                'title' => $item->title,
+                'url' => $item->url,
+            ],
+        ];
+    }
+
+    protected function cachedCandidates(): array
+    {
+        $cached = Cache::get(self::CACHE_KEY);
+
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $lock = Cache::lock(self::LOCK_KEY, max(10, (int) config('app.discovery.venusos.cache_ttl_seconds', 900)));
+
+        if (! $lock->get()) {
+            return is_array($cached) ? $cached : [];
+        }
+
+        try {
+            $candidates = $this->scanCandidates();
+            Cache::put(self::CACHE_KEY, $candidates, now()->addSeconds((int) config('app.discovery.venusos.cache_ttl_seconds', 900)));
+
+            return $candidates;
+        } finally {
+            $lock->release();
+        }
+    }
+
+    protected function scanCandidates(): array
+    {
+        $hosts = array_values(array_diff($this->candidateHosts(), $this->existingHosts()));
+
+        if ($hosts === []) {
+            return [];
+        }
+
+        $candidates = [];
+        $icon = $this->ensureIconPath();
+        $tagId = $this->targetTagId();
+
+        foreach (array_chunk($hosts, max(1, (int) config('app.discovery.venusos.chunk_size', 4))) as $chunk) {
+            $responses = Http::pool(function (Pool $pool) use ($chunk) {
+                $requests = [];
+
+                foreach ($chunk as $host) {
+                    $requests[] = $pool
+                        ->as($host.':root')
+                        ->timeout((float) config('app.discovery.venusos.timeout_seconds', 0.8))
+                        ->connectTimeout((float) config('app.discovery.venusos.connect_timeout_seconds', 0.4))
+                        ->get("http://{$host}/");
+                    $requests[] = $pool
+                        ->as($host.':websocket')
+                        ->timeout((float) config('app.discovery.venusos.timeout_seconds', 0.8))
+                        ->connectTimeout((float) config('app.discovery.venusos.connect_timeout_seconds', 0.4))
+                        ->get("http://{$host}/websocket-mqtt");
+                }
+
+                return $requests;
+            });
+
+            foreach ($chunk as $host) {
+                $rootResponse = $responses[$host.':root'] ?? null;
+                $websocketResponse = $responses[$host.':websocket'] ?? null;
+
+                if (! $this->isVenusOsCandidate($rootResponse, $websocketResponse)) {
+                    continue;
+                }
+
+                $url = "http://{$host}";
+                $candidates[] = [
+                    'id' => sha1('venusos:'.$url),
+                    'source' => 'venusos',
+                    'sourceLabel' => $this->label(),
+                    'title' => $this->fallbackTitle($host),
+                    'subtitle' => 'Victron Venus OS',
+                    'url' => $url,
+                    'host' => $host,
+                    'appId' => self::APP_ID,
+                    'icon' => $icon,
+                    'iconUrl' => $this->iconUrl($icon),
+                    'tagId' => $tagId,
+                    'colour' => self::DEFAULT_COLOUR,
+                    'config' => [
+                        'enabled' => true,
+                        'override_url' => null,
+                        'mqtt_port' => (int) config('app.discovery.venusos.mqtt_port', 1883),
+                        'portal_id' => null,
+                    ],
+                ];
+            }
+        }
+
+        usort($candidates, static function (array $left, array $right): int {
+            return [$left['title'], $left['host']] <=> [$right['title'], $right['host']];
+        });
+
+        return $candidates;
+    }
+
+    protected function isVenusOsCandidate($rootResponse, $websocketResponse): bool
+    {
+        $rootLooksRight = false;
+        $websocketLooksRight = false;
+
+        if ($rootResponse instanceof Response) {
+            $location = strtolower(trim((string) $rootResponse->header('Location', '')));
+            $rootLooksRight = in_array($rootResponse->status(), [301, 302], true)
+                && str_contains($location, '/gui-v1');
+        }
+
+        if ($websocketResponse instanceof Response) {
+            $body = strtolower((string) $websocketResponse->body());
+            $websocketLooksRight = in_array($websocketResponse->status(), [400, 426], true)
+                && str_contains($body, 'websocket');
+        }
+
+        return $rootLooksRight || $websocketLooksRight;
+    }
+
+    protected function fallbackTitle(string $host): string
+    {
+        return "VenusOS {$host}";
+    }
+
+    protected function candidateHosts(): array
+    {
+        $configuredHosts = array_filter((array) config('app.discovery.venusos.hosts', []));
+
+        if ($configuredHosts !== []) {
+            return array_values(array_unique(array_map([$this, 'normalizeHost'], $configuredHosts)));
+        }
+
+        $baseHost = $this->discoverBaseHost();
+
+        if (! is_string($baseHost) || ! filter_var($baseHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return [];
+        }
+
+        $octets = explode('.', $baseHost);
+        $prefix = implode('.', array_slice($octets, 0, 3));
+        $hosts = [];
+
+        for ($suffix = 1; $suffix <= 254; $suffix += 1) {
+            $host = "{$prefix}.{$suffix}";
+
+            if ($host === $baseHost) {
+                continue;
+            }
+
+            $hosts[] = $host;
+        }
+
+        return $hosts;
+    }
+
+    protected function discoverBaseHost(): ?string
+    {
+        $configHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+
+        if (is_string($configHost) && filter_var($configHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return $this->normalizeHost($configHost);
+        }
+
+        $requestHost = Request::getHost();
+
+        if (is_string($requestHost) && filter_var($requestHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return $this->normalizeHost($requestHost);
+        }
+
+        return null;
+    }
+
+    protected function filterExistingHosts(array $candidates): array
+    {
+        $existingHosts = $this->existingHosts();
+
+        return array_values(array_filter($candidates, static function (array $candidate) use ($existingHosts): bool {
+            return ! in_array($candidate['host'], $existingHosts, true);
+        }));
+    }
+
+    protected function existingHosts(): array
+    {
+        return Item::query()
+            ->where('type', 0)
+            ->pluck('url')
+            ->map(fn ($url) => $this->extractHost($url))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    protected function existingItemForHost(string $host): ?Item
+    {
+        return Item::query()
+            ->where('type', 0)
+            ->get()
+            ->first(function (Item $item) use ($host): bool {
+                return $this->extractHost($item->url) === $host;
+            });
+    }
+
+    protected function forgetCandidate(string $candidateId): void
+    {
+        $remainingCandidates = array_values(array_filter($this->cachedCandidates(), static function (array $candidate) use ($candidateId): bool {
+            return $candidate['id'] !== $candidateId;
+        }));
+
+        Cache::put(self::CACHE_KEY, $remainingCandidates, now()->addSeconds((int) config('app.discovery.venusos.cache_ttl_seconds', 900)));
+    }
+
+    protected function targetTagId(): int
+    {
+        $tag = Item::query()
+            ->where('type', 1)
+            ->where(function ($query) {
+                $query->where('url', 'venusos')
+                    ->orWhere('title', 'VenusOS');
+            })
+            ->orderByDesc('pinned')
+            ->first();
+
+        return $tag ? (int) $tag->id : 0;
+    }
+
+    protected function ensureIconPath(): ?string
+    {
+        $iconPath = 'icons/venusos.png';
+
+        if (! Storage::disk('public')->exists($iconPath)) {
+            $sourcePath = app_path('SupportedApps/VenusOS/venusos.png');
+
+            if (file_exists($sourcePath)) {
+                Storage::disk('public')->put($iconPath, file_get_contents($sourcePath));
+            }
+        }
+
+        return Storage::disk('public')->exists($iconPath) ? $iconPath : null;
+    }
+
+    protected function iconUrl(?string $iconPath): string
+    {
+        $baseUrl = $this->baseUrl();
+
+        if (is_string($iconPath) && $iconPath !== '' && Storage::disk('public')->exists($iconPath)) {
+            return "{$baseUrl}/storage/{$iconPath}";
+        }
+
+        return "{$baseUrl}/img/heimdall-icon-small.png";
+    }
+
+    protected function baseUrl(): string
+    {
+        $configUrl = rtrim((string) config('app.url'), '/');
+        $configHost = parse_url($configUrl, PHP_URL_HOST);
+
+        if (
+            $configUrl !== ''
+            && is_string($configHost)
+            && $configHost !== ''
+            && strtolower($configHost) !== 'localhost'
+        ) {
+            return $configUrl;
+        }
+
+        $scheme = Request::getScheme();
+        $host = Request::getHttpHost();
+
+        if (is_string($host) && $host !== '') {
+            return "{$scheme}://{$host}";
+        }
+
+        return $configUrl !== '' ? $configUrl : 'http://localhost';
+    }
+
+    protected function extractHost(?string $url): ?string
+    {
+        if (! is_string($url) || trim($url) === '') {
+            return null;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if (is_string($host) && $host !== '') {
+            return $this->normalizeHost($host);
+        }
+
+        $host = parse_url('http://'.ltrim($url, '/'), PHP_URL_HOST);
+
+        return is_string($host) && $host !== '' ? $this->normalizeHost($host) : null;
+    }
+
+    protected function normalizeHost(string $host): string
+    {
+        return strtolower(trim($host));
+    }
+}

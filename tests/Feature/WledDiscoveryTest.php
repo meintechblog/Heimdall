@@ -399,4 +399,69 @@ class WledDiscoveryTest extends TestCase
         $this->assertSame('a8032aa13dd8', data_get(json_decode($item->description, true), 'wled_identity.mac'));
         $this->assertSame('http://192.168.3.60', data_get(json_decode($item->description, true), 'wled_preferred_url'));
     }
+
+    public function test_does_not_create_a_duplicate_item_when_cached_candidate_matches_existing_wled_identity(): void
+    {
+        $existingItem = Item::factory()->create([
+            'title' => 'Buero WLED',
+            'url' => 'http://wled-buero.local',
+            'user_id' => 0,
+            'appid' => 'ac894a3a9399f135f6eb87f27fb742c71189cc86',
+            'description' => json_encode([
+                'wled_identity' => [
+                    'mac' => 'a8032aa13dd8',
+                    'mdns' => 'wled-buero',
+                    'aliases' => [
+                        'wled-buero.local',
+                        '192.168.3.57',
+                    ],
+                ],
+                'wled_preferred_url' => 'http://wled-buero.local',
+            ]),
+        ]);
+
+        Cache::put('discovery:wled:candidates', [
+            [
+                'id' => sha1('wled:mac:a8032aa13dd8'),
+                'source' => 'wled',
+                'title' => 'wled-buero',
+                'url' => 'http://192.168.3.167',
+                'host' => '192.168.3.167',
+                'appId' => 'ac894a3a9399f135f6eb87f27fb742c71189cc86',
+                'icon' => 'icons/wled.png',
+                'tagId' => 0,
+                'colour' => '#161b1f',
+                'identity' => [
+                    'mac' => 'a8032aa13dd8',
+                    'mdns' => 'wled-buero',
+                    'aliases' => [
+                        '192.168.3.167',
+                        'wled-buero.local',
+                    ],
+                ],
+            ],
+        ], 900);
+
+        $response = $this->postJson('/discoveries/items', [
+            'source' => 'wled',
+            'candidateId' => sha1('wled:mac:a8032aa13dd8'),
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('created', false);
+        $response->assertJsonPath('item.id', $existingItem->id);
+
+        $this->assertSame(1, Item::query()->where('appid', 'ac894a3a9399f135f6eb87f27fb742c71189cc86')->count());
+
+        $existingItem->refresh();
+
+        $aliases = data_get(json_decode($existingItem->description, true), 'wled_identity.aliases', []);
+        sort($aliases);
+
+        $this->assertSame([
+            '192.168.3.167',
+            '192.168.3.57',
+            'wled-buero.local',
+        ], $aliases);
+    }
 }

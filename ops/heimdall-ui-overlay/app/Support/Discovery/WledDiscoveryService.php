@@ -37,9 +37,20 @@ class WledDiscoveryService
 
         abort_if($candidate === null, HttpResponse::HTTP_NOT_FOUND, 'Discovery candidate not found.');
 
-        $existingItem = $this->existingItemForHost($candidate['host']);
+        $candidateIdentity = is_array($candidate['identity'] ?? null) ? $candidate['identity'] : [];
+        $existingItem = $candidateIdentity !== []
+            ? $this->existingItemForIdentity($candidateIdentity)
+            : null;
+
+        if (! $existingItem) {
+            $existingItem = $this->existingItemForHost($candidate['host']);
+        }
 
         if ($existingItem) {
+            if ($candidateIdentity !== []) {
+                $this->syncIdentityMetadata($existingItem, $candidateIdentity);
+            }
+
             $this->forgetCandidate($candidateId);
 
             return [

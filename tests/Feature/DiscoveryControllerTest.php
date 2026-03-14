@@ -60,6 +60,9 @@ class DiscoveryControllerTest extends TestCase
             'app.discovery.shelly.hosts' => [
                 '203.0.113.2',
             ],
+            'app.discovery.awtrix.hosts' => [
+                '203.0.113.4',
+            ],
         ]);
 
         $this->withServerVariables([

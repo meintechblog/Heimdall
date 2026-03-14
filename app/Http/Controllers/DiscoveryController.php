@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\Discovery\EspresenseDiscoveryService;
+use App\Support\Discovery\AwtrixDiscoveryService;
 use App\Support\Discovery\ShellyDiscoveryService;
 use App\Support\Discovery\VenusOSDiscoveryService;
 use App\Support\Discovery\WledDiscoveryService;
@@ -18,6 +19,7 @@ class DiscoveryController extends Controller
         'espresense' => EspresenseDiscoveryService::class,
         'venusos' => VenusOSDiscoveryService::class,
         'shelly' => ShellyDiscoveryService::class,
+        'awtrix' => AwtrixDiscoveryService::class,
     ];
 
     public function __construct()

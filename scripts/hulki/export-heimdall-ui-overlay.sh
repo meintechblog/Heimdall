@@ -9,6 +9,7 @@ BUILD_ASSETS=0
 FILES=(
   "app/Item.php"
   "app/Http/Controllers/DiscoveryController.php"
+  "app/Support/Discovery/AwtrixDiscoveryService.php"
   "app/Support/Discovery/EspresenseDiscoveryService.php"
   "app/Support/Discovery/ShellyDiscoveryService.php"
   "app/Support/Discovery/VenusOSDiscoveryService.php"

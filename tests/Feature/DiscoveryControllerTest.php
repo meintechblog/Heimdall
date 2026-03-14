@@ -63,6 +63,9 @@ class DiscoveryControllerTest extends TestCase
             'app.discovery.awtrix.hosts' => [
                 '203.0.113.4',
             ],
+            'app.discovery.mobotix.hosts' => [
+                '203.0.113.5',
+            ],
         ]);
 
         $this->withServerVariables([

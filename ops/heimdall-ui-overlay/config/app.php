@@ -66,6 +66,16 @@ return [
             'connect_timeout_seconds' => (float) env('DISCOVERY_AWTRIX_CONNECT_TIMEOUT_SECONDS', 0.4),
             'chunk_size' => (int) env('DISCOVERY_AWTRIX_CHUNK_SIZE', 4),
         ],
+        'mobotix' => [
+            'hosts' => array_values(array_filter(array_map(
+                static fn ($host) => trim($host),
+                explode(',', (string) env('DISCOVERY_MOBOTIX_HOSTS', ''))
+            ))),
+            'cache_ttl_seconds' => (int) env('DISCOVERY_MOBOTIX_CACHE_TTL_SECONDS', 900),
+            'timeout_seconds' => (float) env('DISCOVERY_MOBOTIX_TIMEOUT_SECONDS', 0.8),
+            'connect_timeout_seconds' => (float) env('DISCOVERY_MOBOTIX_CONNECT_TIMEOUT_SECONDS', 0.4),
+            'chunk_size' => (int) env('DISCOVERY_MOBOTIX_CHUNK_SIZE', 4),
+        ],
     ],
 
     'aliases' => Facade::defaultAliases()->merge([

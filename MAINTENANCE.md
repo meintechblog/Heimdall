@@ -45,12 +45,13 @@ Das macht:
 - Der Live-Deploy registriert den privaten Anwendungstyp `VenusOS` automatisch erneut, falls Heimdall-Updates ihn aus der Datenbank werfen.
 - Der Live-Deploy registriert jetzt auch den privaten Anwendungstyp `Shelly` erneut, damit per Discovery angelegte Shelly-Geraete nicht auf generische Links zurueckfallen.
 - Neue Live-Stat-Kacheln sollen sich an `docs/plans/2026-03-12-heimdall-tile-ci-design.md` orientieren, damit Spinner, Polling und Fallbacks gleich bleiben.
-- Die Discovery scannt absichtlich gecacht im Hintergrund; wenn du das enger ziehen willst, setze `DISCOVERY_WLED_HOSTS`, `DISCOVERY_ESPRESENSE_HOSTS`, `DISCOVERY_VENUSOS_HOSTS`, `DISCOVERY_SHELLY_HOSTS` und `DISCOVERY_AWTRIX_HOSTS` auf feste Hostlisten statt das lokale `/24` abzutasten.
+- Die Discovery scannt absichtlich gecacht im Hintergrund; wenn du das enger ziehen willst, setze `DISCOVERY_WLED_HOSTS`, `DISCOVERY_ESPRESENSE_HOSTS`, `DISCOVERY_VENUSOS_HOSTS`, `DISCOVERY_SHELLY_HOSTS`, `DISCOVERY_AWTRIX_HOSTS` und `DISCOVERY_MOBOTIX_HOSTS` auf feste Hostlisten statt das lokale `/24` abzutasten.
 - WLED-Discovery dedupliziert ueber die WLED-`mac`, damit dasselbe Geraet nicht noch einmal ueber `.local`, WLAN-IP oder LAN-IP im `+` auftaucht.
 - Auf der WLED-Edit-Seite wird die aktive URL jetzt aus den bekannten Alias-Adressen ausgewaehlt und wieder ins normale `url`-Feld geschrieben.
 - VenusOS-Discovery erkennt Victron-Geraete ueber den lokalen `/gui-v1`-/`websocket-mqtt`-Stack und legt direkt echte `VenusOS`-Eintraege an.
 - Shelly-Discovery liest `/shelly` plus `/settings`, verwendet den Shelly-Namen als Vorschlag und legt direkt echte `Shelly`-Eintraege an.
 - AWTRIX-Discovery erkennt Ulanzi-/AWTRIX-Displays ueber `/api/stats` und den `awtrix_*`-UID-Marker und legt bewusst normale Heimdall-Links an.
+- Mobotix-Discovery erkennt Kameras ueber den Redirect von `/` auf `/control/userimage.html` und legt bewusst normale Heimdall-Links an.
 
 ## Schnelle Live-Checks
 

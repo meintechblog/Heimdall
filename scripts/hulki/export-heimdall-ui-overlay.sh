@@ -11,6 +11,7 @@ FILES=(
   "app/Http/Controllers/DiscoveryController.php"
   "app/Support/Discovery/AwtrixDiscoveryService.php"
   "app/Support/Discovery/EspresenseDiscoveryService.php"
+  "app/Support/Discovery/MobotixDiscoveryService.php"
   "app/Support/Discovery/ShellyDiscoveryService.php"
   "app/Support/Discovery/VenusOSDiscoveryService.php"
   "app/Support/Discovery/WledDiscoveryService.php"

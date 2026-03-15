@@ -4,7 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Support\Discovery\EspresenseDiscoveryService;
 use App\Support\Discovery\AwtrixDiscoveryService;
+use App\Support\Discovery\Go2rtcDiscoveryService;
+use App\Support\Discovery\HomeAssistantDiscoveryService;
+use App\Support\Discovery\HomebridgeDiscoveryService;
 use App\Support\Discovery\MobotixDiscoveryService;
+use App\Support\Discovery\NodeRedDiscoveryService;
+use App\Support\Discovery\OpenDTUDiscoveryService;
+use App\Support\Discovery\OpenWBDiscoveryService;
 use App\Support\Discovery\ShellyDiscoveryService;
 use App\Support\Discovery\VenusOSDiscoveryService;
 use App\Support\Discovery\WledDiscoveryService;
@@ -22,6 +28,12 @@ class DiscoveryController extends Controller
         'shelly' => ShellyDiscoveryService::class,
         'awtrix' => AwtrixDiscoveryService::class,
         'mobotix' => MobotixDiscoveryService::class,
+        'nodered' => NodeRedDiscoveryService::class,
+        'go2rtc' => Go2rtcDiscoveryService::class,
+        'openwb' => OpenWBDiscoveryService::class,
+        'opendtu' => OpenDTUDiscoveryService::class,
+        'homebridge' => HomebridgeDiscoveryService::class,
+        'homeassistant' => HomeAssistantDiscoveryService::class,
     ];
 
     public function __construct()

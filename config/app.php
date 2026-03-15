@@ -76,6 +76,66 @@ return [
             'connect_timeout_seconds' => (float) env('DISCOVERY_MOBOTIX_CONNECT_TIMEOUT_SECONDS', 0.4),
             'chunk_size' => (int) env('DISCOVERY_MOBOTIX_CHUNK_SIZE', 4),
         ],
+        'nodered' => [
+            'hosts' => array_values(array_filter(array_map(
+                static fn ($host) => trim($host),
+                explode(',', (string) env('DISCOVERY_NODERED_HOSTS', ''))
+            ))),
+            'cache_ttl_seconds' => (int) env('DISCOVERY_NODERED_CACHE_TTL_SECONDS', 900),
+            'timeout_seconds' => (float) env('DISCOVERY_NODERED_TIMEOUT_SECONDS', 0.8),
+            'connect_timeout_seconds' => (float) env('DISCOVERY_NODERED_CONNECT_TIMEOUT_SECONDS', 0.25),
+            'chunk_size' => (int) env('DISCOVERY_NODERED_CHUNK_SIZE', 8),
+        ],
+        'go2rtc' => [
+            'hosts' => array_values(array_filter(array_map(
+                static fn ($host) => trim($host),
+                explode(',', (string) env('DISCOVERY_GO2RTC_HOSTS', ''))
+            ))),
+            'cache_ttl_seconds' => (int) env('DISCOVERY_GO2RTC_CACHE_TTL_SECONDS', 900),
+            'timeout_seconds' => (float) env('DISCOVERY_GO2RTC_TIMEOUT_SECONDS', 0.8),
+            'connect_timeout_seconds' => (float) env('DISCOVERY_GO2RTC_CONNECT_TIMEOUT_SECONDS', 0.25),
+            'chunk_size' => (int) env('DISCOVERY_GO2RTC_CHUNK_SIZE', 8),
+        ],
+        'openwb' => [
+            'hosts' => array_values(array_filter(array_map(
+                static fn ($host) => trim($host),
+                explode(',', (string) env('DISCOVERY_OPENWB_HOSTS', ''))
+            ))),
+            'cache_ttl_seconds' => (int) env('DISCOVERY_OPENWB_CACHE_TTL_SECONDS', 900),
+            'timeout_seconds' => (float) env('DISCOVERY_OPENWB_TIMEOUT_SECONDS', 0.8),
+            'connect_timeout_seconds' => (float) env('DISCOVERY_OPENWB_CONNECT_TIMEOUT_SECONDS', 0.25),
+            'chunk_size' => (int) env('DISCOVERY_OPENWB_CHUNK_SIZE', 8),
+        ],
+        'opendtu' => [
+            'hosts' => array_values(array_filter(array_map(
+                static fn ($host) => trim($host),
+                explode(',', (string) env('DISCOVERY_OPENDTU_HOSTS', ''))
+            ))),
+            'cache_ttl_seconds' => (int) env('DISCOVERY_OPENDTU_CACHE_TTL_SECONDS', 900),
+            'timeout_seconds' => (float) env('DISCOVERY_OPENDTU_TIMEOUT_SECONDS', 0.8),
+            'connect_timeout_seconds' => (float) env('DISCOVERY_OPENDTU_CONNECT_TIMEOUT_SECONDS', 0.25),
+            'chunk_size' => (int) env('DISCOVERY_OPENDTU_CHUNK_SIZE', 8),
+        ],
+        'homebridge' => [
+            'hosts' => array_values(array_filter(array_map(
+                static fn ($host) => trim($host),
+                explode(',', (string) env('DISCOVERY_HOMEBRIDGE_HOSTS', ''))
+            ))),
+            'cache_ttl_seconds' => (int) env('DISCOVERY_HOMEBRIDGE_CACHE_TTL_SECONDS', 900),
+            'timeout_seconds' => (float) env('DISCOVERY_HOMEBRIDGE_TIMEOUT_SECONDS', 0.8),
+            'connect_timeout_seconds' => (float) env('DISCOVERY_HOMEBRIDGE_CONNECT_TIMEOUT_SECONDS', 0.25),
+            'chunk_size' => (int) env('DISCOVERY_HOMEBRIDGE_CHUNK_SIZE', 8),
+        ],
+        'homeassistant' => [
+            'hosts' => array_values(array_filter(array_map(
+                static fn ($host) => trim($host),
+                explode(',', (string) env('DISCOVERY_HOMEASSISTANT_HOSTS', ''))
+            ))),
+            'cache_ttl_seconds' => (int) env('DISCOVERY_HOMEASSISTANT_CACHE_TTL_SECONDS', 900),
+            'timeout_seconds' => (float) env('DISCOVERY_HOMEASSISTANT_TIMEOUT_SECONDS', 0.8),
+            'connect_timeout_seconds' => (float) env('DISCOVERY_HOMEASSISTANT_CONNECT_TIMEOUT_SECONDS', 0.25),
+            'chunk_size' => (int) env('DISCOVERY_HOMEASSISTANT_CHUNK_SIZE', 8),
+        ],
     ],
 
     'aliases' => Facade::defaultAliases()->merge([

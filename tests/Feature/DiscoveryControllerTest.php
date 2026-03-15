@@ -66,6 +66,24 @@ class DiscoveryControllerTest extends TestCase
             'app.discovery.mobotix.hosts' => [
                 '203.0.113.5',
             ],
+            'app.discovery.nodered.hosts' => [
+                '203.0.113.6',
+            ],
+            'app.discovery.go2rtc.hosts' => [
+                '203.0.113.7',
+            ],
+            'app.discovery.openwb.hosts' => [
+                '203.0.113.8',
+            ],
+            'app.discovery.opendtu.hosts' => [
+                '203.0.113.9',
+            ],
+            'app.discovery.homebridge.hosts' => [
+                '203.0.113.16',
+            ],
+            'app.discovery.homeassistant.hosts' => [
+                '203.0.113.17',
+            ],
         ]);
 
         $this->withServerVariables([

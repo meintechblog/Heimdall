@@ -92,7 +92,7 @@ This fork also carries a private `VenusOS` enhanced app for local Victron/Venus 
 
 This fork also carries a cached multi-source auto-discovery flow on the dashboard:
 
-- the dashboard checks in the background for new `WLED`, `ESPresense`, `VenusOS`, `Shelly`, `AWTRIX`, and `Mobotix` devices that are not already present in the item list
+- the dashboard checks in the background for new `WLED`, `ESPresense`, `VenusOS`, `Shelly`, `AWTRIX`, `Mobotix`, `NodeRED`, `go2rtc`, `openWB`, `openDTU`, `Homebridge`, and `Home Assistant` services that are not already present in the item list
 - the `+` button sits directly next to the search field and only appears when unmatched discovery candidates exist
 - clicking `+` opens prepared discovery tiles directly below the search field
 - clicking a discovery card opens the device itself
@@ -106,6 +106,13 @@ This fork also carries a cached multi-source auto-discovery flow on the dashboar
 - Shelly candidates prefer the device `name` from `/settings` and add real `Shelly` tiles instead of generic links
 - AWTRIX candidates are detected from `/api/stats` via the `awtrix_*` device UID marker and add normal Heimdall link tiles
 - Mobotix candidates are detected from the root redirect to `/control/userimage.html` and add normal Heimdall link tiles
+- NodeRED candidates are detected from `:1880/settings`
+- go2rtc candidates are detected from `:1984/api`
+- openWB candidates are detected from the fast root-page markers (`openWB_logo.svg` + `openWB Pro`)
+- openDTU candidates are detected from `/api/livedata/status`
+- Homebridge candidates are detected from the Homebridge web UI on `:8581`
+- Home Assistant candidates are detected from the local API on `:8123`
+- these service-style sources compare by full base URL including port, so multiple services on the same IP do not hide each other
 - discovery is intentionally cache-backed, chunked, and tab-visibility-aware so it does not keep hammering the LAN while the dashboard is hidden
 
 Optional tuning for discovery:
@@ -116,12 +123,24 @@ Optional tuning for discovery:
 - `DISCOVERY_SHELLY_HOSTS=192.168.3.40,192.168.3.56` to limit Shelly scanning to known hosts instead of the whole local `/24`
 - `DISCOVERY_AWTRIX_HOSTS=192.168.3.141,192.168.3.154` to limit AWTRIX scanning to known displays instead of the whole local `/24`
 - `DISCOVERY_MOBOTIX_HOSTS=192.168.3.21,192.168.3.24` to limit Mobotix scanning to known cameras instead of the whole local `/24`
+- `DISCOVERY_NODERED_HOSTS=192.168.3.8,192.168.3.30,192.168.3.34` to limit NodeRED scanning to known hosts instead of the whole local `/24`
+- `DISCOVERY_GO2RTC_HOSTS=192.168.3.125,192.168.3.174,192.168.3.219` to limit go2rtc scanning to known hosts instead of the whole local `/24`
+- `DISCOVERY_OPENWB_HOSTS=192.168.3.119,192.168.3.156` to limit openWB scanning to known hosts instead of the whole local `/24`
+- `DISCOVERY_OPENDTU_HOSTS=192.168.3.98` to limit openDTU scanning to known hosts instead of the whole local `/24`
+- `DISCOVERY_HOMEBRIDGE_HOSTS=192.168.3.7,192.168.3.192` to limit Homebridge scanning to known hosts instead of the whole local `/24`
+- `DISCOVERY_HOMEASSISTANT_HOSTS=192.168.3.175` to limit Home Assistant scanning to known hosts instead of the whole local `/24`
 - `DISCOVERY_WLED_CACHE_TTL_SECONDS=900` to control how long WLED candidates stay cached
 - `DISCOVERY_ESPRESENSE_CACHE_TTL_SECONDS=900` to control how long ESPresense candidates stay cached
 - `DISCOVERY_VENUSOS_CACHE_TTL_SECONDS=900` to control how long VenusOS candidates stay cached
 - `DISCOVERY_SHELLY_CACHE_TTL_SECONDS=900` to control how long Shelly candidates stay cached
 - `DISCOVERY_AWTRIX_CACHE_TTL_SECONDS=900` to control how long AWTRIX candidates stay cached
 - `DISCOVERY_MOBOTIX_CACHE_TTL_SECONDS=900` to control how long Mobotix candidates stay cached
+- `DISCOVERY_NODERED_CACHE_TTL_SECONDS=900` to control how long NodeRED candidates stay cached
+- `DISCOVERY_GO2RTC_CACHE_TTL_SECONDS=900` to control how long go2rtc candidates stay cached
+- `DISCOVERY_OPENWB_CACHE_TTL_SECONDS=900` to control how long openWB candidates stay cached
+- `DISCOVERY_OPENDTU_CACHE_TTL_SECONDS=900` to control how long openDTU candidates stay cached
+- `DISCOVERY_HOMEBRIDGE_CACHE_TTL_SECONDS=900` to control how long Homebridge candidates stay cached
+- `DISCOVERY_HOMEASSISTANT_CACHE_TTL_SECONDS=900` to control how long Home Assistant candidates stay cached
 - `DISCOVERY_SUMMARY_REFRESH_SECONDS=300` to control how often the dashboard rechecks the cached discovery summary
 
 Shared Heimdall tile design rules for the Hulki fork are documented in `docs/plans/2026-03-12-heimdall-tile-ci-design.md`. Use that as the baseline when adding new live-stat tile extensions so loading behavior, polling discipline, and icon-area feedback stay consistent.

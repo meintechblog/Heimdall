@@ -22,10 +22,17 @@ The overlay export currently includes:
 
 - `app/Item.php`
 - `app/Http/Controllers/DiscoveryController.php`
+- `app/Support/Discovery/AbstractUrlDiscoveryService.php`
 - `app/Support/Discovery/AwtrixDiscoveryService.php`
+- `app/Support/Discovery/Go2rtcDiscoveryService.php`
+- `app/Support/Discovery/HomeAssistantDiscoveryService.php`
+- `app/Support/Discovery/HomebridgeDiscoveryService.php`
 - `app/Search.php`
 - `app/Support/Discovery/ShellyDiscoveryService.php`
 - `app/Support/Discovery/MobotixDiscoveryService.php`
+- `app/Support/Discovery/NodeRedDiscoveryService.php`
+- `app/Support/Discovery/OpenDTUDiscoveryService.php`
+- `app/Support/Discovery/OpenWBDiscoveryService.php`
 - `app/Support/Discovery/VenusOSDiscoveryService.php`
 - `app/Support/Discovery/WledDiscoveryService.php`
 - `app/SupportedApps/Proxmox/Proxmox.php`
@@ -198,7 +205,7 @@ For the VenusOS tile customization, confirm:
 For the dashboard discovery flow, confirm:
 
 - `GET /discoveries/summary` responds on the live instance
-- the dashboard only shows the `+` button when there really are unmatched `WLED`, `ESPresense`, `VenusOS`, `Shelly`, `AWTRIX`, or `Mobotix` devices
+- the dashboard only shows the `+` button when there really are unmatched `WLED`, `ESPresense`, `VenusOS`, `Shelly`, `AWTRIX`, `Mobotix`, `NodeRED`, `go2rtc`, `openWB`, `openDTU`, `Homebridge`, or `Home Assistant` devices
 - the `+` button sits next to the search field
 - clicking `+` expands prepared discovery tiles directly below the search bar
 - clicking a discovery card opens the device itself
@@ -211,6 +218,13 @@ For the dashboard discovery flow, confirm:
 - Shelly candidates prefer the configured Shelly `name` from `/settings` and create typed `Shelly` items
 - AWTRIX candidates are detected from `/api/stats`, use the `awtrix_*` UID marker, and create normal Heimdall items
 - Mobotix candidates are detected from the root redirect to `/control/userimage.html` and create normal Heimdall items
+- NodeRED candidates are detected from `:1880/settings` and create normal Heimdall items
+- go2rtc candidates are detected from `:1984/api` and create normal Heimdall items
+- openWB candidates are detected from the fast root-page markers (`openWB_logo.svg` + `openWB Pro`) and create normal Heimdall items
+- openDTU candidates are detected from `/api/livedata/status` and create normal Heimdall items
+- Homebridge candidates are detected from the web UI on `:8581` and create normal Heimdall items
+- Home Assistant candidates are detected from the local API on `:8123` and create normal Heimdall items
+- these service-style sources compare candidates by base URL including port so multiple services on the same host do not suppress each other
 - when no new discovery devices exist, the discovery button stays hidden
 
 For live operations, keep CT100 on a normal web stack (`nginx` + `php-fpm`) instead of `php artisan serve`. The built-in Laravel dev server is acceptable for quick local testing, but it is too fragile for live dashboard traffic and multiple parallel live-stat requests.

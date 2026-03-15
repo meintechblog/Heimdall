@@ -208,6 +208,7 @@ For the dashboard discovery flow, confirm:
 - the dashboard only shows the `+` button when there really are unmatched `WLED`, `ESPresense`, `VenusOS`, `Shelly`, `AWTRIX`, `Mobotix`, `NodeRED`, `go2rtc`, `openWB`, `openDTU`, `Homebridge`, or `Home Assistant` devices
 - the `+` button sits next to the search field
 - clicking `+` expands prepared discovery tiles directly below the search bar
+- a fresh discovery run now updates the candidate list progressively while the panel is still searching
 - clicking a discovery card opens the device itself
 - clicking `Hinzufuegen` creates a normal Heimdall item
 - WLED candidates prefer the configured `mDNS` name when available

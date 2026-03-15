@@ -77,6 +77,7 @@ Route::post('test_config', [ItemController::class,'testConfig'])->name('test_con
 Route::get('get_stats/{id}', [ItemController::class,'getStats'])->name('get_stats');
 Route::name('discoveries.')->prefix('discoveries')->group(function () {
     Route::get('/summary', [DiscoveryController::class, 'summary'])->name('summary');
+    Route::get('/progress', [DiscoveryController::class, 'progress'])->name('progress');
     Route::get('/candidates', [DiscoveryController::class, 'candidates'])->name('candidates');
     Route::post('/items', [DiscoveryController::class, 'store'])->name('store');
 });

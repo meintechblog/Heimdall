@@ -95,6 +95,7 @@ This fork also carries a cached multi-source auto-discovery flow on the dashboar
 - the dashboard checks in the background for new `WLED`, `ESPresense`, `VenusOS`, `Shelly`, `AWTRIX`, `Mobotix`, `NodeRED`, `go2rtc`, `openWB`, `openDTU`, `Homebridge`, and `Home Assistant` services that are not already present in the item list
 - the `+` button sits directly next to the search field and only appears when unmatched discovery candidates exist
 - clicking `+` opens prepared discovery tiles directly below the search field
+- when a fresh discovery run starts, candidates now appear progressively while the panel is still searching
 - clicking a discovery card opens the device itself
 - clicking `Hinzufuegen` creates a normal Heimdall item
 - WLED candidates prefer the configured `mDNS` identifier from `/json/cfg` as the suggested title

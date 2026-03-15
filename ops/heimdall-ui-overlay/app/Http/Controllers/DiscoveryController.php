@@ -17,6 +17,7 @@ use App\Support\Discovery\WledDiscoveryService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 
 class DiscoveryController extends Controller
@@ -92,6 +93,26 @@ class DiscoveryController extends Controller
         ]);
     }
 
+    public function progress(Request $request): JsonResponse
+    {
+        $this->authorizeDiscoveryAccess($request);
+
+        $state = $request->boolean('fresh')
+            ? $this->resetProgressState()
+            : $this->loadProgressState();
+
+        $state = $this->advanceProgressState($state);
+        $this->storeProgressState($state);
+
+        return response()->json([
+            'totalCount' => count($this->flattenProgressCandidates($state)),
+            'candidates' => $this->flattenProgressCandidates($state),
+            'completedSources' => (int) ($state['nextIndex'] ?? 0),
+            'totalSources' => count(self::SOURCE_SERVICES),
+            'isComplete' => (bool) ($state['isComplete'] ?? false),
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $this->authorizeDiscoveryAccess($request);
@@ -125,5 +146,80 @@ class DiscoveryController extends Controller
         if (! in_array($adminRole, $roles, true)) {
             throw new AuthorizationException('Discovery requires admin privileges.');
         }
+    }
+
+    protected function resetProgressState(): array
+    {
+        foreach (array_keys(self::SOURCE_SERVICES) as $source) {
+            Cache::forget("discovery:{$source}:candidates");
+        }
+
+        return [
+            'nextIndex' => 0,
+            'isComplete' => false,
+            'candidates' => [],
+        ];
+    }
+
+    protected function loadProgressState(): array
+    {
+        $state = Cache::get($this->progressCacheKey());
+
+        if (! is_array($state)) {
+            return $this->resetProgressState();
+        }
+
+        return array_merge([
+            'nextIndex' => 0,
+            'isComplete' => false,
+            'candidates' => [],
+        ], $state);
+    }
+
+    protected function storeProgressState(array $state): void
+    {
+        Cache::put(
+            $this->progressCacheKey(),
+            $state,
+            now()->addSeconds((int) config('app.discovery.summary_refresh_seconds', 300))
+        );
+    }
+
+    protected function advanceProgressState(array $state): array
+    {
+        $sourceKeys = array_keys(self::SOURCE_SERVICES);
+        $nextIndex = (int) ($state['nextIndex'] ?? 0);
+
+        if ($nextIndex >= count($sourceKeys)) {
+            $state['isComplete'] = true;
+
+            return $state;
+        }
+
+        $sourceKey = $sourceKeys[$nextIndex];
+        $serviceClass = self::SOURCE_SERVICES[$sourceKey];
+        $service = app($serviceClass);
+
+        $state['candidates'][$sourceKey] = $service->candidates();
+        $state['nextIndex'] = $nextIndex + 1;
+        $state['isComplete'] = $state['nextIndex'] >= count($sourceKeys);
+
+        return $state;
+    }
+
+    protected function flattenProgressCandidates(array $state): array
+    {
+        $candidates = array_values(array_merge(...array_values($state['candidates'] ?? [[]])));
+
+        usort($candidates, static function (array $left, array $right): int {
+            return [$left['source'], $left['title'], $left['host']] <=> [$right['source'], $right['title'], $right['host']];
+        });
+
+        return $candidates;
+    }
+
+    protected function progressCacheKey(): string
+    {
+        return 'discovery:progress:state';
     }
 }

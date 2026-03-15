@@ -24,6 +24,7 @@ function createDiscoveryDom() {
               class="discovery-hub"
               data-summary-url="/discoveries/summary"
               data-candidates-url="/discoveries/candidates"
+              data-progress-url="/discoveries/progress"
               data-add-url="/discoveries/items"
             >
               <button
@@ -50,6 +51,10 @@ function createDiscoveryDom() {
   global.window = dom.window;
   global.document = dom.window.document;
   global.Node = dom.window.Node;
+  Object.defineProperty(dom.window.document, "hidden", {
+    configurable: true,
+    value: false,
+  });
 
   return dom;
 }
@@ -78,11 +83,14 @@ test("shows the plus button and renders separate open and add actions", async ()
       };
     }
 
-    if (url === "/discoveries/candidates") {
+    if (url === "/discoveries/progress?fresh=1") {
       return {
         ok: true,
         json: async () => ({
           totalCount: 2,
+          completedSources: 3,
+          totalSources: 3,
+          isComplete: true,
           candidates: [
             {
               id: "candidate-1",
@@ -151,7 +159,7 @@ test("shows the plus button and renders separate open and add actions", async ()
   );
   assert.deepEqual(fetchCalls, [
     "/discoveries/summary",
-    "/discoveries/candidates",
+    "/discoveries/progress?fresh=1",
   ]);
 });
 
@@ -173,11 +181,14 @@ test("opens a prepared discovery card without triggering add", async () => {
       };
     }
 
-    if (url === "/discoveries/candidates") {
+    if (url === "/discoveries/progress?fresh=1") {
       return {
         ok: true,
         json: async () => ({
           totalCount: 1,
+          completedSources: 1,
+          totalSources: 1,
+          isComplete: true,
           candidates: [
             {
               id: "candidate-1",
@@ -214,6 +225,7 @@ test("opens a prepared discovery card without triggering add", async () => {
     new window.MouseEvent("click", { bubbles: true, cancelable: true })
   );
   await flush();
+  await flush();
 
   document
     .querySelector(".discovery-candidate-open")
@@ -224,7 +236,7 @@ test("opens a prepared discovery card without triggering add", async () => {
   assert.deepEqual(opens, [["http://192.168.3.64", "_blank"]]);
   assert.deepEqual(fetchCalls, [
     "/discoveries/summary",
-    "/discoveries/candidates",
+    "/discoveries/progress?fresh=1",
   ]);
 });
 
@@ -243,11 +255,14 @@ test("adds a prepared discovery tile as a normal item from the add button", asyn
       };
     }
 
-    if (url === "/discoveries/candidates") {
+    if (url === "/discoveries/progress?fresh=1") {
       return {
         ok: true,
         json: async () => ({
           totalCount: 1,
+          completedSources: 1,
+          totalSources: 1,
+          isComplete: true,
           candidates: [
             {
               id: "candidate-1",
@@ -329,11 +344,14 @@ test("escapes discovery candidate content before rendering", async () => {
       };
     }
 
-    if (url === "/discoveries/candidates") {
+    if (url === "/discoveries/progress?fresh=1") {
       return {
         ok: true,
         json: async () => ({
           totalCount: 1,
+          completedSources: 1,
+          totalSources: 1,
+          isComplete: true,
           candidates: [
             {
               id: 'candidate-1" onclick="alert(1)',
@@ -381,4 +399,127 @@ test("escapes discovery candidate content before rendering", async () => {
     null
   );
   assert.match(candidates.textContent, /<img src=x data-injected="title">/);
+});
+
+test("renders discovery candidates progressively while a fresh scan is running", async () => {
+  createDiscoveryDom();
+
+  const fetchCalls = [];
+  const scheduled = [];
+  const fetchMock = async (url) => {
+    fetchCalls.push(url);
+
+    if (url === "/discoveries/summary") {
+      return {
+        ok: true,
+        json: async () => ({
+          totalCount: 2,
+          sources: [{ key: "wled", label: "WLED", count: 2 }],
+        }),
+      };
+    }
+
+    if (url === "/discoveries/progress?fresh=1") {
+      return {
+        ok: true,
+        json: async () => ({
+          totalCount: 1,
+          completedSources: 1,
+          totalSources: 3,
+          isComplete: false,
+          candidates: [
+            {
+              id: "candidate-1",
+              source: "wled",
+              sourceLabel: "WLED",
+              title: "wled-buero2",
+              subtitle: "192.168.3.64 · WLED 0.14.1",
+              host: "192.168.3.64",
+              url: "http://192.168.3.64",
+              iconUrl: "/storage/icons/wled.png",
+            },
+          ],
+        }),
+      };
+    }
+
+    if (url === "/discoveries/progress") {
+      return {
+        ok: true,
+        json: async () => ({
+          totalCount: 2,
+          completedSources: 3,
+          totalSources: 3,
+          isComplete: true,
+          candidates: [
+            {
+              id: "candidate-1",
+              source: "wled",
+              sourceLabel: "WLED",
+              title: "wled-buero2",
+              subtitle: "192.168.3.64 · WLED 0.14.1",
+              host: "192.168.3.64",
+              url: "http://192.168.3.64",
+              iconUrl: "/storage/icons/wled.png",
+            },
+            {
+              id: "candidate-2",
+              source: "espresense",
+              sourceLabel: "ESPresense",
+              title: "Kueche",
+              subtitle: "192.168.3.239 · Raum",
+              host: "192.168.3.239",
+              url: "http://192.168.3.239",
+              iconUrl: "/storage/icons/espresense.svg",
+            },
+          ],
+        }),
+      };
+    }
+
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+
+  const discovery = initDiscoveryPanel({
+    document,
+    window,
+    fetch: fetchMock,
+    scheduleInterval: () => 1,
+    scheduleTimeout(callback) {
+      scheduled.push(callback);
+      return scheduled.length;
+    },
+    clearScheduledTimeout() {},
+    autoStart: false,
+  });
+
+  await discovery.refreshSummary();
+
+  document.getElementById("discovery-toggle").dispatchEvent(
+    new window.MouseEvent("click", { bubbles: true, cancelable: true })
+  );
+  await flush();
+
+  assert.match(
+    document.querySelector('[data-role="candidates"]').textContent,
+    /wled-buero2/
+  );
+  assert.doesNotMatch(
+    document.querySelector('[data-role="candidates"]').textContent,
+    /Kueche/
+  );
+  assert.equal(scheduled.length, 1);
+
+  await scheduled.shift()();
+  await flush();
+
+  assert.match(
+    document.querySelector('[data-role="candidates"]').textContent,
+    /Kueche/
+  );
+  assert.deepEqual(fetchCalls, [
+    "/discoveries/summary",
+    "/discoveries/progress?fresh=1",
+    "/discoveries/progress",
+  ]);
 });

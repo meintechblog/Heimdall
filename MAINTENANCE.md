@@ -46,6 +46,7 @@ Das macht:
 - Der Live-Deploy registriert jetzt auch den privaten Anwendungstyp `Shelly` erneut, damit per Discovery angelegte Shelly-Geraete nicht auf generische Links zurueckfallen.
 - Neue Live-Stat-Kacheln sollen sich an `docs/plans/2026-03-12-heimdall-tile-ci-design.md` orientieren, damit Spinner, Polling und Fallbacks gleich bleiben.
 - Die Discovery scannt absichtlich gecacht im Hintergrund; wenn du das enger ziehen willst, setze `DISCOVERY_WLED_HOSTS`, `DISCOVERY_ESPRESENSE_HOSTS`, `DISCOVERY_VENUSOS_HOSTS`, `DISCOVERY_SHELLY_HOSTS`, `DISCOVERY_AWTRIX_HOSTS`, `DISCOVERY_MOBOTIX_HOSTS`, `DISCOVERY_NODERED_HOSTS`, `DISCOVERY_GO2RTC_HOSTS`, `DISCOVERY_OPENWB_HOSTS`, `DISCOVERY_OPENDTU_HOSTS`, `DISCOVERY_HOMEBRIDGE_HOSTS` und `DISCOVERY_HOMEASSISTANT_HOSTS` auf feste Hostlisten statt das lokale `/24` abzutasten.
+- Wenn du das `+`-Panel oeffnest, arbeitet die Discovery jetzt quelleweise und zeigt Treffer schon waehrend des laufenden Suchdurchgangs an.
 - WLED-Discovery dedupliziert ueber die WLED-`mac`, damit dasselbe Geraet nicht noch einmal ueber `.local`, WLAN-IP oder LAN-IP im `+` auftaucht.
 - Auf der WLED-Edit-Seite wird die aktive URL jetzt aus den bekannten Alias-Adressen ausgewaehlt und wieder ins normale `url`-Feld geschrieben.
 - VenusOS-Discovery erkennt Victron-Geraete ueber den lokalen `/gui-v1`-/`websocket-mqtt`-Stack und legt direkt echte `VenusOS`-Eintraege an.

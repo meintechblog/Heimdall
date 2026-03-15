@@ -72,6 +72,16 @@ function initHeimdallDiscoveryPanel(options = {}) {
     (win && typeof win.setInterval === "function"
       ? win.setInterval.bind(win)
       : null);
+  const scheduleTimeout =
+    options.scheduleTimeout ||
+    (win && typeof win.setTimeout === "function"
+      ? win.setTimeout.bind(win)
+      : null);
+  const clearScheduledTimeout =
+    options.clearScheduledTimeout ||
+    (win && typeof win.clearTimeout === "function"
+      ? win.clearTimeout.bind(win)
+      : null);
   const autoStart = options.autoStart !== false;
 
   if (!doc || !fetchImpl) {
@@ -87,6 +97,7 @@ function initHeimdallDiscoveryPanel(options = {}) {
   const shell = hub.closest(".search-discovery-shell") || hub.parentElement;
 
   const summaryUrl = hub.getAttribute("data-summary-url");
+  const progressUrl = hub.getAttribute("data-progress-url");
   const candidatesUrl = hub.getAttribute("data-candidates-url");
   const addUrl = hub.getAttribute("data-add-url");
   const refreshSeconds = Number(
@@ -113,6 +124,9 @@ function initHeimdallDiscoveryPanel(options = {}) {
     return null;
   }
 
+  let progressTimer = null;
+  let progressRunId = 0;
+
   function setState(message = "", hidden = false) {
     state.textContent = message;
     state.classList.toggle("is-hidden", hidden || message === "");
@@ -124,10 +138,26 @@ function initHeimdallDiscoveryPanel(options = {}) {
     panel.classList.toggle("is-hidden", !expanded);
   }
 
-  function setCount(totalCount) {
+  function stopProgressPolling() {
+    progressRunId += 1;
+
+    if (progressTimer !== null && clearScheduledTimeout) {
+      clearScheduledTimeout(progressTimer);
+    }
+
+    progressTimer = null;
+  }
+
+  function setCount(totalCount, keepVisible = false) {
     if (totalCount > 0) {
       toggle.classList.remove("is-hidden");
       countLabel.textContent = String(totalCount);
+      return;
+    }
+
+    if (keepVisible) {
+      toggle.classList.remove("is-hidden");
+      countLabel.textContent = "";
       return;
     }
 
@@ -178,7 +208,10 @@ function initHeimdallDiscoveryPanel(options = {}) {
     candidatesContainer.innerHTML = candidates
       .map(renderCandidateMarkup)
       .join("");
-    setCount(Number(payload.totalCount || candidates.length));
+    setCount(
+      Number(payload.totalCount || candidates.length),
+      payload.isComplete !== true
+    );
 
     if (candidates.length > 0) {
       setState("", true);
@@ -187,6 +220,88 @@ function initHeimdallDiscoveryPanel(options = {}) {
     }
 
     return payload;
+  }
+
+  function renderCandidates(payload) {
+    const candidates = Array.isArray(payload.candidates)
+      ? payload.candidates
+      : [];
+
+    candidatesContainer.innerHTML = candidates
+      .map(renderCandidateMarkup)
+      .join("");
+    setCount(Number(payload.totalCount || candidates.length));
+
+    if (payload.isComplete === true) {
+      if (candidates.length > 0) {
+        setState("", true);
+      } else {
+        setState("Keine neuen Services verfuegbar.");
+      }
+
+      return;
+    }
+
+    const completedSources = Number(payload.completedSources || 0);
+    const totalSources = Number(payload.totalSources || 0);
+    const progressLabel =
+      totalSources > 0
+        ? `Suche nach neuen Services ... (${completedSources}/${totalSources})`
+        : "Suche nach neuen Services ...";
+
+    setState(progressLabel);
+  }
+
+  async function loadProgressiveCandidates(fresh = false, runId = 0) {
+    if (!progressUrl) {
+      return loadCandidates();
+    }
+
+    const requestUrl = fresh ? `${progressUrl}?fresh=1` : progressUrl;
+    const response = await fetchImpl(requestUrl, {
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to load progressive candidates: ${response.status}`
+      );
+    }
+
+    const payload = await response.json();
+
+    if (runId !== progressRunId) {
+      return payload;
+    }
+
+    renderCandidates(payload);
+
+    if (
+      payload.isComplete !== true &&
+      toggle.getAttribute("aria-expanded") === "true" &&
+      doc.hidden !== true &&
+      scheduleTimeout
+    ) {
+      progressTimer = scheduleTimeout(() => {
+        loadProgressiveCandidates(false, runId).catch(() => {
+          setState(
+            "Die laufende Suche konnte gerade nicht aktualisiert werden."
+          );
+          stopProgressPolling();
+        });
+      }, 700);
+    }
+
+    return payload;
+  }
+
+  async function startProgressiveDiscovery() {
+    stopProgressPolling();
+    setState("Suche nach neuen Services ...");
+    const runId = progressRunId;
+    return loadProgressiveCandidates(true, runId);
   }
 
   async function addCandidate(button) {
@@ -267,12 +382,13 @@ function initHeimdallDiscoveryPanel(options = {}) {
     }
 
     if (toggle.getAttribute("aria-expanded") === "true") {
+      stopProgressPolling();
       setExpanded(false);
       return;
     }
 
     setExpanded(true);
-    await loadCandidates();
+    await startProgressiveDiscovery();
   });
 
   shell.addEventListener("click", (event) => {
@@ -307,7 +423,15 @@ function initHeimdallDiscoveryPanel(options = {}) {
   });
 
   doc.addEventListener("visibilitychange", () => {
-    if (doc.hidden !== true) {
+    if (doc.hidden === true) {
+      stopProgressPolling();
+      return;
+    }
+
+    if (toggle.getAttribute("aria-expanded") === "true") {
+      stopProgressPolling();
+      loadProgressiveCandidates(false, progressRunId).catch(() => {});
+    } else {
       refreshSummary().catch(() => {});
     }
   });
@@ -329,6 +453,7 @@ function initHeimdallDiscoveryPanel(options = {}) {
   return {
     refreshSummary,
     loadCandidates,
+    startProgressiveDiscovery,
     setExpanded,
   };
 }

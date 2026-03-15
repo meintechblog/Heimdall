@@ -3,6 +3,7 @@
         id="discovery-hub"
         class="discovery-hub"
         data-summary-url="{{ route('discoveries.summary') }}"
+        data-progress-url="{{ route('discoveries.progress') }}"
         data-candidates-url="{{ route('discoveries.candidates') }}"
         data-add-url="{{ route('discoveries.store') }}"
         data-refresh-seconds="{{ config('app.discovery.summary_refresh_seconds', 300) }}"

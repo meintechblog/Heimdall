@@ -35,6 +35,10 @@ class DiscoveryControllerTest extends TestCase
 
         $this->withServerVariables([
             'HTTP_REMOTE_GROUPS' => 'viewer,users',
+        ])->getJson('/discoveries/progress')->assertForbidden();
+
+        $this->withServerVariables([
+            'HTTP_REMOTE_GROUPS' => 'viewer,users',
         ])->postJson('/discoveries/items', [
             'source' => 'wled',
             'candidateId' => 'test-candidate',
@@ -91,5 +95,19 @@ class DiscoveryControllerTest extends TestCase
         ])->getJson('/discoveries/summary')
             ->assertOk()
             ->assertJsonPath('totalCount', 0);
+    }
+
+    public function test_discovery_progress_endpoint_returns_partial_scan_payload(): void
+    {
+        $response = $this->getJson('/discoveries/progress?fresh=1');
+
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'totalCount',
+            'candidates',
+            'completedSources',
+            'totalSources',
+            'isComplete',
+        ]);
     }
 }

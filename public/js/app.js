@@ -4187,6 +4187,8 @@ function initHeimdallDiscoveryPanel() {
   var win = options.window || (typeof window !== "undefined" ? window : null);
   var fetchImpl = options.fetch || (win && typeof win.fetch === "function" ? win.fetch.bind(win) : null);
   var scheduleInterval = options.scheduleInterval || (win && typeof win.setInterval === "function" ? win.setInterval.bind(win) : null);
+  var scheduleTimeout = options.scheduleTimeout || (win && typeof win.setTimeout === "function" ? win.setTimeout.bind(win) : null);
+  var clearScheduledTimeout = options.clearScheduledTimeout || (win && typeof win.clearTimeout === "function" ? win.clearTimeout.bind(win) : null);
   var autoStart = options.autoStart !== false;
   if (!doc || !fetchImpl) {
     return null;
@@ -4197,6 +4199,7 @@ function initHeimdallDiscoveryPanel() {
   }
   var shell = hub.closest(".search-discovery-shell") || hub.parentElement;
   var summaryUrl = hub.getAttribute("data-summary-url");
+  var progressUrl = hub.getAttribute("data-progress-url");
   var candidatesUrl = hub.getAttribute("data-candidates-url");
   var addUrl = hub.getAttribute("data-add-url");
   var refreshSeconds = Number(hub.getAttribute("data-refresh-seconds") || 300);
@@ -4209,6 +4212,8 @@ function initHeimdallDiscoveryPanel() {
   if (!toggle || !countLabel || !iconLabel || !panel || !state || !candidatesContainer) {
     return null;
   }
+  var progressTimer = null;
+  var progressRunId = 0;
   function setState() {
     var message = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "";
     var hidden = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
@@ -4220,10 +4225,23 @@ function initHeimdallDiscoveryPanel() {
     iconLabel.textContent = expanded ? "-" : "+";
     panel.classList.toggle("is-hidden", !expanded);
   }
+  function stopProgressPolling() {
+    progressRunId += 1;
+    if (progressTimer !== null && clearScheduledTimeout) {
+      clearScheduledTimeout(progressTimer);
+    }
+    progressTimer = null;
+  }
   function setCount(totalCount) {
+    var keepVisible = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
     if (totalCount > 0) {
       toggle.classList.remove("is-hidden");
       countLabel.textContent = String(totalCount);
+      return;
+    }
+    if (keepVisible) {
+      toggle.classList.remove("is-hidden");
+      countLabel.textContent = "";
       return;
     }
     toggle.classList.add("is-hidden");
@@ -4296,7 +4314,7 @@ function initHeimdallDiscoveryPanel() {
             payload = _context3.v;
             candidates = Array.isArray(payload.candidates) ? payload.candidates : [];
             candidatesContainer.innerHTML = candidates.map(renderCandidateMarkup).join("");
-            setCount(Number(payload.totalCount || candidates.length));
+            setCount(Number(payload.totalCount || candidates.length), payload.isComplete !== true);
             if (candidates.length > 0) {
               setState("", true);
             } else {
@@ -4308,21 +4326,118 @@ function initHeimdallDiscoveryPanel() {
     }));
     return _loadCandidates.apply(this, arguments);
   }
+  function renderCandidates(payload) {
+    var candidates = Array.isArray(payload.candidates) ? payload.candidates : [];
+    candidatesContainer.innerHTML = candidates.map(renderCandidateMarkup).join("");
+    setCount(Number(payload.totalCount || candidates.length));
+    if (payload.isComplete === true) {
+      if (candidates.length > 0) {
+        setState("", true);
+      } else {
+        setState("Keine neuen Services verfuegbar.");
+      }
+      return;
+    }
+    var completedSources = Number(payload.completedSources || 0);
+    var totalSources = Number(payload.totalSources || 0);
+    var progressLabel = totalSources > 0 ? "Suche nach neuen Services ... (".concat(completedSources, "/").concat(totalSources, ")") : "Suche nach neuen Services ...";
+    setState(progressLabel);
+  }
+  function loadProgressiveCandidates() {
+    return _loadProgressiveCandidates.apply(this, arguments);
+  }
+  function _loadProgressiveCandidates() {
+    _loadProgressiveCandidates = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+      var fresh,
+        runId,
+        requestUrl,
+        response,
+        payload,
+        _args4 = arguments;
+      return _regenerator().w(function (_context4) {
+        while (1) switch (_context4.n) {
+          case 0:
+            fresh = _args4.length > 0 && _args4[0] !== undefined ? _args4[0] : false;
+            runId = _args4.length > 1 && _args4[1] !== undefined ? _args4[1] : 0;
+            if (progressUrl) {
+              _context4.n = 1;
+              break;
+            }
+            return _context4.a(2, loadCandidates());
+          case 1:
+            requestUrl = fresh ? "".concat(progressUrl, "?fresh=1") : progressUrl;
+            _context4.n = 2;
+            return fetchImpl(requestUrl, {
+              headers: {
+                "X-Requested-With": "XMLHttpRequest"
+              }
+            });
+          case 2:
+            response = _context4.v;
+            if (response.ok) {
+              _context4.n = 3;
+              break;
+            }
+            throw new Error("Failed to load progressive candidates: ".concat(response.status));
+          case 3:
+            _context4.n = 4;
+            return response.json();
+          case 4:
+            payload = _context4.v;
+            if (!(runId !== progressRunId)) {
+              _context4.n = 5;
+              break;
+            }
+            return _context4.a(2, payload);
+          case 5:
+            renderCandidates(payload);
+            if (payload.isComplete !== true && toggle.getAttribute("aria-expanded") === "true" && doc.hidden !== true && scheduleTimeout) {
+              progressTimer = scheduleTimeout(function () {
+                loadProgressiveCandidates(false, runId)["catch"](function () {
+                  setState("Die laufende Suche konnte gerade nicht aktualisiert werden.");
+                  stopProgressPolling();
+                });
+              }, 700);
+            }
+            return _context4.a(2, payload);
+        }
+      }, _callee4);
+    }));
+    return _loadProgressiveCandidates.apply(this, arguments);
+  }
+  function startProgressiveDiscovery() {
+    return _startProgressiveDiscovery.apply(this, arguments);
+  }
+  function _startProgressiveDiscovery() {
+    _startProgressiveDiscovery = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
+      var runId;
+      return _regenerator().w(function (_context5) {
+        while (1) switch (_context5.n) {
+          case 0:
+            stopProgressPolling();
+            setState("Suche nach neuen Services ...");
+            runId = progressRunId;
+            return _context5.a(2, loadProgressiveCandidates(true, runId));
+        }
+      }, _callee5);
+    }));
+    return _startProgressiveDiscovery.apply(this, arguments);
+  }
   function addCandidate(_x) {
     return _addCandidate.apply(this, arguments);
   }
   function _addCandidate() {
-    _addCandidate = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4(button) {
+    _addCandidate = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6(button) {
       var candidateButton, overlay, addAction, response, _t3;
-      return _regenerator().w(function (_context4) {
-        while (1) switch (_context4.p = _context4.n) {
+      return _regenerator().w(function (_context6) {
+        while (1) switch (_context6.p = _context6.n) {
           case 0:
             candidateButton = button;
             if (!candidateButton.classList.contains("is-adding")) {
-              _context4.n = 1;
+              _context6.n = 1;
               break;
             }
-            return _context4.a(2);
+            return _context6.a(2);
           case 1:
             candidateButton.classList.add("is-adding");
             overlay = candidateButton.querySelector(".tile-icon-loading-overlay");
@@ -4333,8 +4448,8 @@ function initHeimdallDiscoveryPanel() {
             if (addAction) {
               addAction.disabled = true;
             }
-            _context4.p = 2;
-            _context4.n = 3;
+            _context6.p = 2;
+            _context6.n = 3;
             return fetchImpl(addUrl, {
               method: "POST",
               headers: {
@@ -4347,24 +4462,24 @@ function initHeimdallDiscoveryPanel() {
               })
             });
           case 3:
-            response = _context4.v;
+            response = _context6.v;
             if (response.ok) {
-              _context4.n = 4;
+              _context6.n = 4;
               break;
             }
             throw new Error("Failed to add candidate: ".concat(response.status));
           case 4:
-            _context4.n = 5;
+            _context6.n = 5;
             return response.json();
           case 5:
             if (win && win.location && typeof win.location.reload === "function") {
               win.location.reload();
             }
-            _context4.n = 7;
+            _context6.n = 7;
             break;
           case 6:
-            _context4.p = 6;
-            _t3 = _context4.v;
+            _context6.p = 6;
+            _t3 = _context6.v;
             setState("Der Eintrag konnte gerade nicht uebernommen werden.");
             candidateButton.classList.remove("is-adding");
             if (overlay) {
@@ -4375,9 +4490,9 @@ function initHeimdallDiscoveryPanel() {
             }
             throw _t3;
           case 7:
-            return _context4.a(2);
+            return _context6.a(2);
         }
-      }, _callee4, null, [[2, 6]]);
+      }, _callee6, null, [[2, 6]]);
     }));
     return _addCandidate.apply(this, arguments);
   }
@@ -4406,12 +4521,13 @@ function initHeimdallDiscoveryPanel() {
               _context.n = 2;
               break;
             }
+            stopProgressPolling();
             setExpanded(false);
             return _context.a(2);
           case 2:
             setExpanded(true);
             _context.n = 3;
-            return loadCandidates();
+            return startProgressiveDiscovery();
           case 3:
             return _context.a(2);
         }
@@ -4444,7 +4560,14 @@ function initHeimdallDiscoveryPanel() {
     openCandidate(candidate);
   });
   doc.addEventListener("visibilitychange", function () {
-    if (doc.hidden !== true) {
+    if (doc.hidden === true) {
+      stopProgressPolling();
+      return;
+    }
+    if (toggle.getAttribute("aria-expanded") === "true") {
+      stopProgressPolling();
+      loadProgressiveCandidates(false, progressRunId)["catch"](function () {});
+    } else {
       refreshSummary()["catch"](function () {});
     }
   });
@@ -4462,6 +4585,7 @@ function initHeimdallDiscoveryPanel() {
   return {
     refreshSummary: refreshSummary,
     loadCandidates: loadCandidates,
+    startProgressiveDiscovery: startProgressiveDiscovery,
     setExpanded: setExpanded
   };
 }
@@ -4544,29 +4668,29 @@ if ((typeof module === "undefined" ? "undefined" : _typeof(module)) === "object"
     return _handleToggleClick.apply(this, arguments);
   }
   function _handleToggleClick() {
-    _handleToggleClick = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5(event) {
+    _handleToggleClick = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7(event) {
       var button, response, data, _t4;
-      return _regenerator().w(function (_context5) {
-        while (1) switch (_context5.p = _context5.n) {
+      return _regenerator().w(function (_context7) {
+        while (1) switch (_context7.p = _context7.n) {
           case 0:
             button = event.target.closest(".fileflows-processing-toggle");
             if (button) {
-              _context5.n = 1;
+              _context7.n = 1;
               break;
             }
-            return _context5.a(2);
+            return _context7.a(2);
           case 1:
             event.preventDefault();
             event.stopPropagation();
             if (!(!fetchImpl || button.disabled)) {
-              _context5.n = 2;
+              _context7.n = 2;
               break;
             }
-            return _context5.a(2);
+            return _context7.a(2);
           case 2:
             button.disabled = true;
-            _context5.p = 3;
-            _context5.n = 4;
+            _context7.p = 3;
+            _context7.n = 4;
             return fetchImpl(button.dataset.toggleUrl, {
               method: "POST",
               headers: {
@@ -4574,30 +4698,30 @@ if ((typeof module === "undefined" ? "undefined" : _typeof(module)) === "object"
               }
             });
           case 4:
-            response = _context5.v;
+            response = _context7.v;
             if (response.ok) {
-              _context5.n = 5;
+              _context7.n = 5;
               break;
             }
             throw new Error("Toggle failed: ".concat(response.status));
           case 5:
-            _context5.n = 6;
+            _context7.n = 6;
             return response.json();
           case 6:
-            data = _context5.v;
+            data = _context7.v;
             updateTileState(button, data);
-            _context5.n = 8;
+            _context7.n = 8;
             break;
           case 7:
-            _context5.p = 7;
-            _t4 = _context5.v;
+            _context7.p = 7;
+            _t4 = _context7.v;
             button.disabled = false;
             // eslint-disable-next-line no-console
             console.error(_t4);
           case 8:
-            return _context5.a(2);
+            return _context7.a(2);
         }
-      }, _callee5, null, [[3, 7]]);
+      }, _callee7, null, [[3, 7]]);
     }));
     return _handleToggleClick.apply(this, arguments);
   }

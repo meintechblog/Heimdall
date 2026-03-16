@@ -282,7 +282,25 @@ class EspresenseDiscoveryService
             ->orderByDesc('pinned')
             ->first();
 
-        return $tag ? (int) $tag->id : 0;
+        if ($tag) {
+            return (int) $tag->id;
+        }
+
+        $currentUser = User::currentUser();
+        $tag = Item::create([
+            'title' => 'ESPresense',
+            'url' => 'espresense',
+            'colour' => self::DEFAULT_COLOUR,
+            'icon' => $this->ensureIconPath(),
+            'pinned' => 1,
+            'order' => 0,
+            'type' => 1,
+            'class' => null,
+            'user_id' => $currentUser ? $currentUser->getId() : 0,
+            'appid' => null,
+        ]);
+
+        return (int) $tag->id;
     }
 
     protected function ensureIconPath(): ?string

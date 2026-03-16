@@ -32,7 +32,7 @@ function renderCandidateMarkup(candidate) {
         <button
           type="button"
           class="discovery-candidate-open"
-          aria-label="${safeCandidate.title} öffnen"
+          aria-label="${safeCandidate.title} &ouml;ffnen"
         >
           <span class="app-icon-container">
             <img class="app-icon" src="${safeCandidate.iconUrl}" alt="${safeCandidate.sourceLabel}" />
@@ -51,9 +51,9 @@ function renderCandidateMarkup(candidate) {
         <button
           type="button"
           class="discovery-candidate-add"
-          aria-label="${safeCandidate.title} hinzufügen"
+          aria-label="${safeCandidate.title} hinzuf&uuml;gen"
         >
-          Hinzufügen
+          Hinzuf&uuml;gen
         </button>
       </span>
     </article>

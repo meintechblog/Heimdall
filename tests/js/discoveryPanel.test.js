@@ -157,6 +157,16 @@ test("shows the plus button and renders separate open and add actions", async ()
     document.querySelectorAll(".discovery-candidate-add").length,
     2
   );
+  assert.equal(
+    document.querySelector(".discovery-candidate-add").textContent.trim(),
+    "Hinzufügen"
+  );
+  assert.equal(
+    document
+      .querySelector(".discovery-candidate-open")
+      .getAttribute("aria-label"),
+    "wled-buero2 öffnen"
+  );
   assert.deepEqual(fetchCalls, [
     "/discoveries/summary",
     "/discoveries/candidates",

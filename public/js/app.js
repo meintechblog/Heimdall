@@ -4479,11 +4479,11 @@ function initHeimdallDiscoveryPanel() {
             remainingCandidates = candidatesContainer.querySelectorAll(".discovery-candidate").length;
             currentCount = Number(countLabel.textContent || 0);
             nextCount = Number.isFinite(currentCount) && currentCount > 0 ? Math.max(remainingCandidates, currentCount - 1) : remainingCandidates;
-            setCount(nextCount, toggle.getAttribute("aria-expanded") === "true");
             if (remainingCandidates > 0) {
+              setCount(nextCount, toggle.getAttribute("aria-expanded") === "true");
               setState("", true);
             } else {
-              setState("Keine neuen Services verfügbar.");
+              setCount(0, false);
             }
             _context6.n = 7;
             break;

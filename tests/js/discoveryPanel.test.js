@@ -354,9 +354,13 @@ test("keeps the discovery list open so multiple candidates can be added without 
     document.querySelectorAll(".discovery-candidate").length,
     0
   );
-  assert.match(
-    document.querySelector('[data-role="state"]').textContent,
-    /Keine neuen Services verfügbar\./
+  assert.equal(
+    document.querySelector('[data-role="panel"]').classList.contains("is-hidden"),
+    true
+  );
+  assert.equal(
+    document.getElementById("discovery-toggle").classList.contains("is-hidden"),
+    true
   );
   assert.deepEqual(addBodies, [
     JSON.stringify({ source: "wled", candidateId: "candidate-1" }),

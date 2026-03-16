@@ -362,12 +362,11 @@ function initHeimdallDiscoveryPanel(options = {}) {
           ? Math.max(remainingCandidates, currentCount - 1)
           : remainingCandidates;
 
-      setCount(nextCount, toggle.getAttribute("aria-expanded") === "true");
-
       if (remainingCandidates > 0) {
+        setCount(nextCount, toggle.getAttribute("aria-expanded") === "true");
         setState("", true);
       } else {
-        setState("Keine neuen Services verfügbar.");
+        setCount(0, false);
       }
     } catch (error) {
       setState("Der Eintrag konnte gerade nicht übernommen werden.");

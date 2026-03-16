@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Support\Discovery\WledDiscoveryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class DiscoveryControllerTest extends TestCase
@@ -109,5 +111,32 @@ class DiscoveryControllerTest extends TestCase
             'totalSources',
             'isComplete',
         ]);
+    }
+
+    public function test_store_forgets_source_candidates_cache_after_adding_item(): void
+    {
+        Cache::put('discovery:wled:candidates', [
+            ['id' => 'candidate-1'],
+        ], now()->addMinutes(5));
+
+        $service = $this->mock(WledDiscoveryService::class);
+        $service->shouldReceive('createItemFromCandidate')
+            ->once()
+            ->with('candidate-1')
+            ->andReturn([
+                'created' => true,
+                'item' => [
+                    'id' => 99,
+                    'title' => 'wled-buero2',
+                    'url' => 'http://192.168.3.64',
+                ],
+            ]);
+
+        $this->postJson('/discoveries/items', [
+            'source' => 'wled',
+            'candidateId' => 'candidate-1',
+        ])->assertCreated();
+
+        $this->assertFalse(Cache::has('discovery:wled:candidates'));
     }
 }

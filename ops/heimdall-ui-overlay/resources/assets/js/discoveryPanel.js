@@ -32,7 +32,7 @@ function renderCandidateMarkup(candidate) {
         <button
           type="button"
           class="discovery-candidate-open"
-          aria-label="${safeCandidate.title} oeffnen"
+          aria-label="${safeCandidate.title} öffnen"
         >
           <span class="app-icon-container">
             <img class="app-icon" src="${safeCandidate.iconUrl}" alt="${safeCandidate.sourceLabel}" />
@@ -51,9 +51,9 @@ function renderCandidateMarkup(candidate) {
         <button
           type="button"
           class="discovery-candidate-add"
-          aria-label="${safeCandidate.title} hinzufuegen"
+          aria-label="${safeCandidate.title} hinzufügen"
         >
-          Hinzufuegen
+          Hinzufügen
         </button>
       </span>
     </article>
@@ -136,6 +136,14 @@ function initHeimdallDiscoveryPanel(options = {}) {
     toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
     iconLabel.textContent = expanded ? "-" : "+";
     panel.classList.toggle("is-hidden", !expanded);
+
+    if (
+      expanded !== true &&
+      countLabel.textContent.trim() === "" &&
+      candidatesContainer.children.length === 0
+    ) {
+      toggle.classList.add("is-hidden");
+    }
   }
 
   function stopProgressPolling() {
@@ -216,7 +224,7 @@ function initHeimdallDiscoveryPanel(options = {}) {
     if (candidates.length > 0) {
       setState("", true);
     } else {
-      setState("Keine neuen Services verfuegbar.");
+      setState("Keine neuen Services verfügbar.");
     }
 
     return payload;
@@ -236,7 +244,7 @@ function initHeimdallDiscoveryPanel(options = {}) {
       if (candidates.length > 0) {
         setState("", true);
       } else {
-        setState("Keine neuen Services verfuegbar.");
+        setState("Keine neuen Services verfügbar.");
       }
 
       return;
@@ -343,11 +351,26 @@ function initHeimdallDiscoveryPanel(options = {}) {
 
       await response.json();
 
-      if (win && win.location && typeof win.location.reload === "function") {
-        win.location.reload();
+      candidateButton.remove();
+
+      const remainingCandidates = candidatesContainer.querySelectorAll(
+        ".discovery-candidate"
+      ).length;
+      const currentCount = Number(countLabel.textContent || 0);
+      const nextCount =
+        Number.isFinite(currentCount) && currentCount > 0
+          ? Math.max(remainingCandidates, currentCount - 1)
+          : remainingCandidates;
+
+      setCount(nextCount, toggle.getAttribute("aria-expanded") === "true");
+
+      if (remainingCandidates > 0) {
+        setState("", true);
+      } else {
+        setState("Keine neuen Services verfügbar.");
       }
     } catch (error) {
-      setState("Der Eintrag konnte gerade nicht uebernommen werden.");
+      setState("Der Eintrag konnte gerade nicht übernommen werden.");
       candidateButton.classList.remove("is-adding");
 
       if (overlay) {
@@ -388,7 +411,7 @@ function initHeimdallDiscoveryPanel(options = {}) {
     }
 
     setExpanded(true);
-    await startProgressiveDiscovery();
+    await loadCandidates();
   });
 
   shell.addEventListener("click", (event) => {
@@ -430,7 +453,7 @@ function initHeimdallDiscoveryPanel(options = {}) {
 
     if (toggle.getAttribute("aria-expanded") === "true") {
       stopProgressPolling();
-      loadProgressiveCandidates(false, progressRunId).catch(() => {});
+      loadCandidates().catch(() => {});
     } else {
       refreshSummary().catch(() => {});
     }

@@ -83,7 +83,7 @@ test("shows the plus button and renders separate open and add actions", async ()
       };
     }
 
-    if (url === "/discoveries/progress?fresh=1") {
+    if (url === "/discoveries/candidates") {
       return {
         ok: true,
         json: async () => ({
@@ -159,7 +159,7 @@ test("shows the plus button and renders separate open and add actions", async ()
   );
   assert.deepEqual(fetchCalls, [
     "/discoveries/summary",
-    "/discoveries/progress?fresh=1",
+    "/discoveries/candidates",
   ]);
 });
 
@@ -181,7 +181,7 @@ test("opens a prepared discovery card without triggering add", async () => {
       };
     }
 
-    if (url === "/discoveries/progress?fresh=1") {
+    if (url === "/discoveries/candidates") {
       return {
         ok: true,
         json: async () => ({
@@ -236,33 +236,30 @@ test("opens a prepared discovery card without triggering add", async () => {
   assert.deepEqual(opens, [["http://192.168.3.64", "_blank"]]);
   assert.deepEqual(fetchCalls, [
     "/discoveries/summary",
-    "/discoveries/progress?fresh=1",
+    "/discoveries/candidates",
   ]);
 });
 
-test("adds a prepared discovery tile as a normal item from the add button", async () => {
+test("keeps the discovery list open so multiple candidates can be added without a reload", async () => {
   createDiscoveryDom();
 
-  const reloads = [];
+  const addBodies = [];
   const fetchMock = async (url, options = {}) => {
     if (url === "/discoveries/summary") {
       return {
         ok: true,
         json: async () => ({
-          totalCount: 1,
-          sources: [{ key: "wled", label: "WLED", count: 1 }],
+          totalCount: 2,
+          sources: [{ key: "wled", label: "WLED", count: 2 }],
         }),
       };
     }
 
-    if (url === "/discoveries/progress?fresh=1") {
+    if (url === "/discoveries/candidates") {
       return {
         ok: true,
         json: async () => ({
-          totalCount: 1,
-          completedSources: 1,
-          totalSources: 1,
-          isComplete: true,
+          totalCount: 2,
           candidates: [
             {
               id: "candidate-1",
@@ -274,6 +271,16 @@ test("adds a prepared discovery tile as a normal item from the add button", asyn
               url: "http://192.168.3.64",
               iconUrl: "/storage/icons/wled.png",
             },
+            {
+              id: "candidate-2",
+              source: "wled",
+              sourceLabel: "WLED",
+              title: "wled-wohnzimmer",
+              subtitle: "192.168.3.65 · WLED 0.14.1",
+              host: "192.168.3.65",
+              url: "http://192.168.3.65",
+              iconUrl: "/storage/icons/wled.png",
+            },
           ],
         }),
       };
@@ -281,7 +288,7 @@ test("adds a prepared discovery tile as a normal item from the add button", asyn
 
     if (url === "/discoveries/items") {
       assert.equal(options.method, "POST");
-      assert.match(String(options.body), /candidate-1/);
+      addBodies.push(String(options.body));
 
       return {
         ok: true,
@@ -301,13 +308,7 @@ test("adds a prepared discovery tile as a normal item from the add button", asyn
 
   const discovery = initDiscoveryPanel({
     document,
-    window: {
-      location: {
-        reload() {
-          reloads.push("reload");
-        },
-      },
-    },
+    window,
     fetch: fetchMock,
     scheduleInterval: () => 1,
     autoStart: false,
@@ -326,8 +327,41 @@ test("adds a prepared discovery tile as a normal item from the add button", asyn
       new window.MouseEvent("click", { bubbles: true, cancelable: true })
     );
   await flush();
+  await flush();
 
-  assert.deepEqual(reloads, ["reload"]);
+  assert.equal(
+    document.querySelectorAll(".discovery-candidate").length,
+    1
+  );
+  assert.match(
+    document.querySelector('[data-role="candidates"]').textContent,
+    /wled-wohnzimmer/
+  );
+  assert.equal(
+    document.querySelector('[data-role="count"]').textContent,
+    "1"
+  );
+
+  document
+    .querySelector(".discovery-candidate-add")
+    .dispatchEvent(
+      new window.MouseEvent("click", { bubbles: true, cancelable: true })
+    );
+  await flush();
+  await flush();
+
+  assert.equal(
+    document.querySelectorAll(".discovery-candidate").length,
+    0
+  );
+  assert.match(
+    document.querySelector('[data-role="state"]').textContent,
+    /Keine neuen Services verfügbar\./
+  );
+  assert.deepEqual(addBodies, [
+    JSON.stringify({ source: "wled", candidateId: "candidate-1" }),
+    JSON.stringify({ source: "wled", candidateId: "candidate-2" }),
+  ]);
 });
 
 test("escapes discovery candidate content before rendering", async () => {
@@ -344,7 +378,7 @@ test("escapes discovery candidate content before rendering", async () => {
       };
     }
 
-    if (url === "/discoveries/progress?fresh=1") {
+    if (url === "/discoveries/candidates") {
       return {
         ok: true,
         json: async () => ({
@@ -405,7 +439,6 @@ test("renders discovery candidates progressively while a fresh scan is running",
   createDiscoveryDom();
 
   const fetchCalls = [];
-  const scheduled = [];
   const fetchMock = async (url) => {
     fetchCalls.push(url);
 
@@ -419,31 +452,7 @@ test("renders discovery candidates progressively while a fresh scan is running",
       };
     }
 
-    if (url === "/discoveries/progress?fresh=1") {
-      return {
-        ok: true,
-        json: async () => ({
-          totalCount: 1,
-          completedSources: 1,
-          totalSources: 3,
-          isComplete: false,
-          candidates: [
-            {
-              id: "candidate-1",
-              source: "wled",
-              sourceLabel: "WLED",
-              title: "wled-buero2",
-              subtitle: "192.168.3.64 · WLED 0.14.1",
-              host: "192.168.3.64",
-              url: "http://192.168.3.64",
-              iconUrl: "/storage/icons/wled.png",
-            },
-          ],
-        }),
-      };
-    }
-
-    if (url === "/discoveries/progress") {
+    if (url === "/discoveries/candidates") {
       return {
         ok: true,
         json: async () => ({
@@ -485,11 +494,6 @@ test("renders discovery candidates progressively while a fresh scan is running",
     window,
     fetch: fetchMock,
     scheduleInterval: () => 1,
-    scheduleTimeout(callback) {
-      scheduled.push(callback);
-      return scheduled.length;
-    },
-    clearScheduledTimeout() {},
     autoStart: false,
   });
 
@@ -504,22 +508,12 @@ test("renders discovery candidates progressively while a fresh scan is running",
     document.querySelector('[data-role="candidates"]').textContent,
     /wled-buero2/
   );
-  assert.doesNotMatch(
-    document.querySelector('[data-role="candidates"]').textContent,
-    /Kueche/
-  );
-  assert.equal(scheduled.length, 1);
-
-  await scheduled.shift()();
-  await flush();
-
   assert.match(
     document.querySelector('[data-role="candidates"]').textContent,
     /Kueche/
   );
   assert.deepEqual(fetchCalls, [
     "/discoveries/summary",
-    "/discoveries/progress?fresh=1",
-    "/discoveries/progress",
+    "/discoveries/candidates",
   ]);
 });

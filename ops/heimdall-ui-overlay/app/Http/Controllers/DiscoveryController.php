@@ -127,6 +127,7 @@ class DiscoveryController extends Controller
         abort_if($serviceClass === null, Response::HTTP_NOT_FOUND, 'Discovery source not found.');
 
         $result = app($serviceClass)->createItemFromCandidate($validated['candidateId']);
+        Cache::forget("discovery:{$validated['source']}:candidates");
 
         return response()->json($result, $result['created'] ? Response::HTTP_CREATED : Response::HTTP_OK);
     }

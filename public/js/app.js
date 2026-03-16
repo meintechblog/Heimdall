@@ -4179,7 +4179,7 @@ function renderCandidateMarkup(candidate) {
     title: escapeHtml(candidate.title),
     subtitle: escapeHtml(subtitle)
   };
-  return "\n    <article\n      class=\"discovery-candidate\"\n      data-candidate-id=\"".concat(safeCandidate.id, "\"\n      data-source=\"").concat(safeCandidate.source, "\"\n      data-url=\"").concat(safeCandidate.url, "\"\n    >\n      <span class=\"discovery-candidate-card\">\n        <button\n          type=\"button\"\n          class=\"discovery-candidate-open\"\n          aria-label=\"").concat(safeCandidate.title, " oeffnen\"\n        >\n          <span class=\"app-icon-container\">\n            <img class=\"app-icon\" src=\"").concat(safeCandidate.iconUrl, "\" alt=\"").concat(safeCandidate.sourceLabel, "\" />\n            <span class=\"tile-icon-loading-overlay is-hidden\" aria-hidden=\"true\">\n              <span class=\"tile-icon-loading-visual\">\n                <span class=\"tile-icon-loading-spinner tile-icon-loading-spinner-ring\" aria-hidden=\"true\"></span>\n              </span>\n            </span>\n          </span>\n          <span class=\"discovery-candidate-details\">\n            <span class=\"discovery-candidate-source\">").concat(safeCandidate.sourceLabel, "</span>\n            <span class=\"discovery-candidate-title\">").concat(safeCandidate.title, "</span>\n            <span class=\"discovery-candidate-meta\">").concat(safeCandidate.subtitle, "</span>\n          </span>\n        </button>\n        <button\n          type=\"button\"\n          class=\"discovery-candidate-add\"\n          aria-label=\"").concat(safeCandidate.title, " hinzufuegen\"\n        >\n          Hinzufuegen\n        </button>\n      </span>\n    </article>\n  ");
+  return "\n    <article\n      class=\"discovery-candidate\"\n      data-candidate-id=\"".concat(safeCandidate.id, "\"\n      data-source=\"").concat(safeCandidate.source, "\"\n      data-url=\"").concat(safeCandidate.url, "\"\n    >\n      <span class=\"discovery-candidate-card\">\n        <button\n          type=\"button\"\n          class=\"discovery-candidate-open\"\n          aria-label=\"").concat(safeCandidate.title, " \xF6ffnen\"\n        >\n          <span class=\"app-icon-container\">\n            <img class=\"app-icon\" src=\"").concat(safeCandidate.iconUrl, "\" alt=\"").concat(safeCandidate.sourceLabel, "\" />\n            <span class=\"tile-icon-loading-overlay is-hidden\" aria-hidden=\"true\">\n              <span class=\"tile-icon-loading-visual\">\n                <span class=\"tile-icon-loading-spinner tile-icon-loading-spinner-ring\" aria-hidden=\"true\"></span>\n              </span>\n            </span>\n          </span>\n          <span class=\"discovery-candidate-details\">\n            <span class=\"discovery-candidate-source\">").concat(safeCandidate.sourceLabel, "</span>\n            <span class=\"discovery-candidate-title\">").concat(safeCandidate.title, "</span>\n            <span class=\"discovery-candidate-meta\">").concat(safeCandidate.subtitle, "</span>\n          </span>\n        </button>\n        <button\n          type=\"button\"\n          class=\"discovery-candidate-add\"\n          aria-label=\"").concat(safeCandidate.title, " hinzuf\xFCgen\"\n        >\n          Hinzuf\xFCgen\n        </button>\n      </span>\n    </article>\n  ");
 }
 function initHeimdallDiscoveryPanel() {
   var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -4224,6 +4224,9 @@ function initHeimdallDiscoveryPanel() {
     toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
     iconLabel.textContent = expanded ? "-" : "+";
     panel.classList.toggle("is-hidden", !expanded);
+    if (expanded !== true && countLabel.textContent.trim() === "" && candidatesContainer.children.length === 0) {
+      toggle.classList.add("is-hidden");
+    }
   }
   function stopProgressPolling() {
     progressRunId += 1;
@@ -4318,7 +4321,7 @@ function initHeimdallDiscoveryPanel() {
             if (candidates.length > 0) {
               setState("", true);
             } else {
-              setState("Keine neuen Services verfuegbar.");
+              setState("Keine neuen Services verfügbar.");
             }
             return _context3.a(2, payload);
         }
@@ -4334,7 +4337,7 @@ function initHeimdallDiscoveryPanel() {
       if (candidates.length > 0) {
         setState("", true);
       } else {
-        setState("Keine neuen Services verfuegbar.");
+        setState("Keine neuen Services verfügbar.");
       }
       return;
     }
@@ -4428,7 +4431,7 @@ function initHeimdallDiscoveryPanel() {
   }
   function _addCandidate() {
     _addCandidate = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6(button) {
-      var candidateButton, overlay, addAction, response, _t3;
+      var candidateButton, overlay, addAction, response, remainingCandidates, currentCount, nextCount, _t3;
       return _regenerator().w(function (_context6) {
         while (1) switch (_context6.p = _context6.n) {
           case 0:
@@ -4472,15 +4475,22 @@ function initHeimdallDiscoveryPanel() {
             _context6.n = 5;
             return response.json();
           case 5:
-            if (win && win.location && typeof win.location.reload === "function") {
-              win.location.reload();
+            candidateButton.remove();
+            remainingCandidates = candidatesContainer.querySelectorAll(".discovery-candidate").length;
+            currentCount = Number(countLabel.textContent || 0);
+            nextCount = Number.isFinite(currentCount) && currentCount > 0 ? Math.max(remainingCandidates, currentCount - 1) : remainingCandidates;
+            setCount(nextCount, toggle.getAttribute("aria-expanded") === "true");
+            if (remainingCandidates > 0) {
+              setState("", true);
+            } else {
+              setState("Keine neuen Services verfügbar.");
             }
             _context6.n = 7;
             break;
           case 6:
             _context6.p = 6;
             _t3 = _context6.v;
-            setState("Der Eintrag konnte gerade nicht uebernommen werden.");
+            setState("Der Eintrag konnte gerade nicht übernommen werden.");
             candidateButton.classList.remove("is-adding");
             if (overlay) {
               overlay.classList.add("is-hidden");
@@ -4527,7 +4537,7 @@ function initHeimdallDiscoveryPanel() {
           case 2:
             setExpanded(true);
             _context.n = 3;
-            return startProgressiveDiscovery();
+            return loadCandidates();
           case 3:
             return _context.a(2);
         }
@@ -4566,7 +4576,7 @@ function initHeimdallDiscoveryPanel() {
     }
     if (toggle.getAttribute("aria-expanded") === "true") {
       stopProgressPolling();
-      loadProgressiveCandidates(false, progressRunId)["catch"](function () {});
+      loadCandidates()["catch"](function () {});
     } else {
       refreshSummary()["catch"](function () {});
     }

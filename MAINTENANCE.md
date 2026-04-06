@@ -50,7 +50,8 @@ Das macht:
 - WLED-Discovery dedupliziert ueber die WLED-`mac`, damit dasselbe Geraet nicht noch einmal ueber `.local`, WLAN-IP oder LAN-IP im `+` auftaucht.
 - Auf der WLED-Edit-Seite wird die aktive URL jetzt aus den bekannten Alias-Adressen ausgewaehlt und wieder ins normale `url`-Feld geschrieben.
 - VenusOS-Discovery erkennt Victron-Geraete ueber den lokalen `/gui-v1`-/`websocket-mqtt`-Stack und legt direkt echte `VenusOS`-Eintraege an.
-- Shelly-Discovery liest `/shelly` plus `/settings`, verwendet den Shelly-Namen als Vorschlag und legt direkt echte `Shelly`-Eintraege an.
+- Shelly-Discovery liest `/shelly` plus `/settings`, verwendet den Shelly-Namen als Vorschlag und legt direkt echte `Shelly`-Eintraege an. Plug-Geraete (SHPLG-*, SNPL-*, S3PL-*) werden hier bewusst ausgefiltert, damit sie unter `shellyplug` erscheinen.
+- ShellyPlug-Discovery erkennt Shelly Plug Geraete (Gen1/Gen2/Gen3) ueber den Geraetetyp bzw. das Modell und legt enhanced `ShellyPlug`-Eintraege an, die live Power (W), Voltage (V) und Gesamtverbrauch (kWh) auf der Kachel anzeigen. Gen2/Gen3 werden ueber `/rpc/Switch.GetStatus?id=0` abgefragt, Gen1 ueber `/status`.
 - AWTRIX-Discovery erkennt Ulanzi-/AWTRIX-Displays ueber `/api/stats` und den `awtrix_*`-UID-Marker und legt bewusst normale Heimdall-Links an.
 - Mobotix-Discovery erkennt Kameras ueber den Redirect von `/` auf `/control/userimage.html` und legt bewusst normale Heimdall-Links an.
 - NodeRED-Discovery erkennt Instanzen ueber `:1880/settings`.

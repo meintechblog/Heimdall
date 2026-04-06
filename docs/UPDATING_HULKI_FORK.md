@@ -29,6 +29,7 @@ The overlay export currently includes:
 - `app/Support/Discovery/HomebridgeDiscoveryService.php`
 - `app/Search.php`
 - `app/Support/Discovery/ShellyDiscoveryService.php`
+- `app/Support/Discovery/ShellyPlugDiscoveryService.php`
 - `app/Support/Discovery/MobotixDiscoveryService.php`
 - `app/Support/Discovery/NodeRedDiscoveryService.php`
 - `app/Support/Discovery/OpenDTUDiscoveryService.php`
@@ -42,6 +43,10 @@ The overlay export currently includes:
 - `app/SupportedApps/Shelly/Shelly.php`
 - `app/SupportedApps/Shelly/app.json`
 - `app/SupportedApps/Shelly/shelly.png`
+- `app/SupportedApps/ShellyPlug/ShellyPlug.php`
+- `app/SupportedApps/ShellyPlug/app.json`
+- `app/SupportedApps/ShellyPlug/livestats.blade.php`
+- `app/SupportedApps/ShellyPlug/shelly.png`
 - `app/SupportedApps/VenusOS/VenusOS.php`
 - `app/SupportedApps/VenusOS/app.json`
 - `app/SupportedApps/VenusOS/config.blade.php`
@@ -205,7 +210,7 @@ For the VenusOS tile customization, confirm:
 For the dashboard discovery flow, confirm:
 
 - `GET /discoveries/summary` responds on the live instance
-- the dashboard only shows the `+` button when there really are unmatched `WLED`, `ESPresense`, `VenusOS`, `Shelly`, `AWTRIX`, `Mobotix`, `NodeRED`, `go2rtc`, `openWB`, `openDTU`, `Homebridge`, or `Home Assistant` devices
+- the dashboard only shows the `+` button when there really are unmatched `WLED`, `ESPresense`, `VenusOS`, `Shelly`, `Shelly Plug`, `AWTRIX`, `Mobotix`, `NodeRED`, `go2rtc`, `openWB`, `openDTU`, `Homebridge`, or `Home Assistant` devices
 - the `+` button sits next to the search field
 - clicking `+` expands prepared discovery tiles directly below the search bar
 - a fresh discovery run now updates the candidate list progressively while the panel is still searching
@@ -216,7 +221,8 @@ For the dashboard discovery flow, confirm:
 - existing WLED items can keep alias metadata in their stored config and the edit page can switch the active URL between discovered addresses
 - ESPresense candidates prefer the configured `room` name when available
 - VenusOS candidates are detected from the local Victron/Venus web markers and create typed `VenusOS` items
-- Shelly candidates prefer the configured Shelly `name` from `/settings` and create typed `Shelly` items
+- Shelly candidates prefer the configured Shelly `name` from `/settings` and create typed `Shelly` items (Plug devices are excluded here)
+- Shelly Plug candidates are detected by device type (Gen1 `SHPLG-*`, Gen2 `SNPL-*`, Gen3 `S3PL-*`) or app name containing `plug`, and create enhanced `ShellyPlug` items showing live Power (W), Voltage (V), and Total energy (kWh)
 - AWTRIX candidates are detected from `/api/stats`, use the `awtrix_*` UID marker, and create normal Heimdall items
 - Mobotix candidates are detected from the root redirect to `/control/userimage.html` and create normal Heimdall items
 - NodeRED candidates are detected from `:1880/settings` and create normal Heimdall items

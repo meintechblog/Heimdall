@@ -12,6 +12,7 @@ use App\Support\Discovery\NodeRedDiscoveryService;
 use App\Support\Discovery\OpenDTUDiscoveryService;
 use App\Support\Discovery\OpenWBDiscoveryService;
 use App\Support\Discovery\ShellyDiscoveryService;
+use App\Support\Discovery\ShellyPlugDiscoveryService;
 use App\Support\Discovery\VenusOSDiscoveryService;
 use App\Support\Discovery\WledDiscoveryService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -27,6 +28,7 @@ class DiscoveryController extends Controller
         'espresense' => EspresenseDiscoveryService::class,
         'venusos' => VenusOSDiscoveryService::class,
         'shelly' => ShellyDiscoveryService::class,
+        'shellyplug' => ShellyPlugDiscoveryService::class,
         'awtrix' => AwtrixDiscoveryService::class,
         'mobotix' => MobotixDiscoveryService::class,
         'nodered' => NodeRedDiscoveryService::class,

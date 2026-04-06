@@ -12,16 +12,27 @@ use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
-class ShellyDiscoveryService
+class ShellyPlugDiscoveryService
 {
-    protected const APP_ID = 'd65462dfcc2066849a1aeac8712497f95315ecd9';
-    protected const CACHE_KEY = 'discovery:shelly:candidates';
-    protected const LOCK_KEY = 'discovery:shelly:scan';
+    protected const APP_ID = 'a3f7b2c1e8d94056b1c2e3f4a5b6c7d8e9f0a1b2';
+    protected const CACHE_KEY = 'discovery:shellyplug:candidates';
+    protected const LOCK_KEY = 'discovery:shellyplug:scan';
     protected const DEFAULT_COLOUR = '#161b1f';
+
+    /** Gen1 type prefixes that identify Shelly Plug devices. */
+    protected const PLUG_TYPE_PREFIXES = [
+        'SHPLG',   // Shelly Plug, Plug S, Plug 2
+    ];
+
+    /** Gen2+ model prefixes for Shelly Plus/Gen3 Plug S. */
+    protected const PLUG_MODEL_PREFIXES = [
+        'SNPL',    // Shelly Plus Plug S (SNPL-00116EU)
+        'S3PL',    // Shelly Plug S Gen3 (S3PL-00112EU)
+    ];
 
     public function label(): string
     {
-        return 'Shelly';
+        return 'Shelly Plug';
     }
 
     public function candidates(): array
@@ -60,7 +71,7 @@ class ShellyDiscoveryService
             'pinned' => 1,
             'order' => 0,
             'type' => 0,
-            'class' => 'App\\SupportedApps\\Shelly\\Shelly',
+            'class' => 'App\\SupportedApps\\ShellyPlug\\ShellyPlug',
             'user_id' => $currentUser->getId(),
             'appid' => self::APP_ID,
         ]);
@@ -155,7 +166,7 @@ class ShellyDiscoveryService
                     continue;
                 }
 
-                if ($this->isPlugDevice($devicePayload)) {
+                if (! $this->isPlugDevice($devicePayload)) {
                     continue;
                 }
 
@@ -172,8 +183,8 @@ class ShellyDiscoveryService
                 $url = "http://{$host}";
 
                 $candidates[] = [
-                    'id' => sha1('shelly:'.$url),
-                    'source' => 'shelly',
+                    'id' => sha1('shellyplug:'.$url),
+                    'source' => 'shellyplug',
                     'sourceLabel' => $this->label(),
                     'title' => $title,
                     'subtitle' => $subtitle,
@@ -195,30 +206,46 @@ class ShellyDiscoveryService
         return $candidates;
     }
 
-    protected function isPlugDevice(array $devicePayload): bool
+    protected function isShellyPayload(array $payload): bool
     {
-        $type = strtoupper(trim((string) ($devicePayload['type'] ?? '')));
-        if (str_starts_with($type, 'SHPLG')) {
+        // Gen1: has 'type' and 'mac'
+        if (trim((string) ($payload['type'] ?? '')) !== '' && trim((string) ($payload['mac'] ?? '')) !== '') {
             return true;
         }
 
-        $model = strtoupper(trim((string) ($devicePayload['model'] ?? '')));
-        if ($model !== '' && (str_starts_with($model, 'SNPL') || str_starts_with($model, 'S3PL'))) {
-            return true;
-        }
-
-        $app = strtolower(trim((string) ($devicePayload['app'] ?? '')));
-        if (str_contains($app, 'plug')) {
+        // Gen2: has 'model' and 'gen' >= 2
+        if (trim((string) ($payload['model'] ?? '')) !== '' && ((int) ($payload['gen'] ?? 0)) >= 2) {
             return true;
         }
 
         return false;
     }
 
-    protected function isShellyPayload(array $payload): bool
+    protected function isPlugDevice(array $devicePayload): bool
     {
-        return trim((string) ($payload['type'] ?? '')) !== ''
-            && trim((string) ($payload['mac'] ?? '')) !== '';
+        // Gen1: check type field (e.g. SHPLG-1, SHPLG-S, SHPLG2-1)
+        $type = strtoupper(trim((string) ($devicePayload['type'] ?? '')));
+        foreach (self::PLUG_TYPE_PREFIXES as $prefix) {
+            if (str_starts_with($type, $prefix)) {
+                return true;
+            }
+        }
+
+        // Gen2: check model field (e.g. SNPL-00116EU for Plus Plug S)
+        $model = strtoupper(trim((string) ($devicePayload['model'] ?? '')));
+        foreach (self::PLUG_MODEL_PREFIXES as $prefix) {
+            if ($model !== '' && str_starts_with($model, $prefix)) {
+                return true;
+            }
+        }
+
+        // Gen2: check app field (e.g. "PlusPlugS")
+        $app = strtolower(trim((string) ($devicePayload['app'] ?? '')));
+        if (str_contains($app, 'plug')) {
+            return true;
+        }
+
+        return false;
     }
 
     protected function candidateTitle(string $host, array $devicePayload, array $settingsPayload): string
@@ -235,16 +262,16 @@ class ShellyDiscoveryService
             return $hostname;
         }
 
-        $type = trim((string) ($devicePayload['type'] ?? ''));
+        $type = trim((string) ($devicePayload['type'] ?? ($devicePayload['app'] ?? '')));
 
-        return $type !== '' ? "Shelly {$type}" : "Shelly {$host}";
+        return $type !== '' ? "Shelly {$type}" : "Shelly Plug {$host}";
     }
 
     protected function candidateSubtitle(array $devicePayload, array $settingsPayload): string
     {
         $parts = [];
-        $type = trim((string) ($devicePayload['type'] ?? ''));
-        $firmware = trim((string) ($settingsPayload['fw'] ?? ''));
+        $type = trim((string) ($devicePayload['type'] ?? ($devicePayload['model'] ?? '')));
+        $firmware = trim((string) ($settingsPayload['fw'] ?? ($devicePayload['fw_id'] ?? '')));
 
         if ($type !== '') {
             $parts[] = $type;
@@ -254,7 +281,7 @@ class ShellyDiscoveryService
             $parts[] = $firmware;
         }
 
-        return $parts !== [] ? implode(' · ', $parts) : 'Shelly';
+        return $parts !== [] ? implode(' · ', $parts) : 'Shelly Plug';
     }
 
     protected function candidateHosts(): array
@@ -364,7 +391,7 @@ class ShellyDiscoveryService
         $iconPath = 'icons/shelly.png';
 
         if (! Storage::disk('public')->exists($iconPath)) {
-            $sourcePath = app_path('SupportedApps/Shelly/shelly.png');
+            $sourcePath = app_path('SupportedApps/ShellyPlug/shelly.png');
 
             if (file_exists($sourcePath)) {
                 Storage::disk('public')->put($iconPath, file_get_contents($sourcePath));

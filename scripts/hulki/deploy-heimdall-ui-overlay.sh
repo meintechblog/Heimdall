@@ -96,6 +96,16 @@ PRIVATE_APPS_TINKER='$apps = [[
     "license" => "Shelly device firmware and local web UI",
     "description" => "Shelly devices discovered on the local network.",
     "tile_background" => "dark",
+], [
+    "appid" => "a3f7b2c1e8d94056b1c2e3f4a5b6c7d8e9f0a1b2",
+    "name" => "Shelly Plug",
+    "class" => "App\\SupportedApps\\ShellyPlug\\ShellyPlug",
+    "enhanced" => 1,
+    "icon" => "icons/shelly.png",
+    "website" => "https://www.shelly.com/",
+    "license" => "Shelly device firmware and local web UI",
+    "description" => "Shelly Plug smart power outlet with live energy monitoring.",
+    "tile_background" => "dark",
 ]];
 
 foreach ($apps as $app) {

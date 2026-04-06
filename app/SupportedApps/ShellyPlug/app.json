@@ -1,0 +1,10 @@
+{
+  "appid": "a3f7b2c1e8d94056b1c2e3f4a5b6c7d8e9f0a1b2",
+  "name": "Shelly Plug",
+  "website": "https://www.shelly.com/",
+  "license": "Shelly device firmware and local web UI",
+  "description": "Shelly Plug smart power outlet with live energy monitoring.",
+  "enhanced": true,
+  "tile_background": "dark",
+  "icon": "shelly.png"
+}

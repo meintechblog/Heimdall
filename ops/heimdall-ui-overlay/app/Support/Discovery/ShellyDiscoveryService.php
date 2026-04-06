@@ -155,6 +155,10 @@ class ShellyDiscoveryService
                     continue;
                 }
 
+                if ($this->isPlugDevice($devicePayload)) {
+                    continue;
+                }
+
                 $settingsPayload = ($settingsResponse instanceof Response && $settingsResponse->successful())
                     ? $settingsResponse->json()
                     : [];
@@ -189,6 +193,26 @@ class ShellyDiscoveryService
         });
 
         return $candidates;
+    }
+
+    protected function isPlugDevice(array $devicePayload): bool
+    {
+        $type = strtoupper(trim((string) ($devicePayload['type'] ?? '')));
+        if (str_starts_with($type, 'SHPLG')) {
+            return true;
+        }
+
+        $model = strtoupper(trim((string) ($devicePayload['model'] ?? '')));
+        if ($model !== '' && (str_starts_with($model, 'SNPL') || str_starts_with($model, 'S3PL'))) {
+            return true;
+        }
+
+        $app = strtolower(trim((string) ($devicePayload['app'] ?? '')));
+        if (str_contains($app, 'plug')) {
+            return true;
+        }
+
+        return false;
     }
 
     protected function isShellyPayload(array $payload): bool
